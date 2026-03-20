@@ -1,4 +1,4 @@
-# GigShield
+# SurakshaShift AI
 
 ### Hyperlocal Income Protection for Delivery Partners in Q-Commerce
 
@@ -10,7 +10,7 @@
 
 ## 1. The Problem We Are Solving
 
-Traditional city-level parametric insurance suffers from **basis risk**: a trigger may fire even when a worker's delivery zone is unaffected, or fail when that worker actually loses income. GigShield solves this for India's Q-Commerce delivery workers (Zepto, Blinkit, Swiggy Instamart), who typically operate within a **1–3 km radius of a single dark store**.
+Traditional city-level parametric insurance suffers from **basis risk**: a trigger may fire even when a worker's delivery zone is unaffected, or fail when that worker actually loses income. SurakshaShift AI solves this for India's Q-Commerce delivery workers (Zepto, Blinkit, Swiggy Instamart), who typically operate within a **1–3 km radius of a single dark store**.
 
 - During peak periods, Q-Commerce workers complete **3–4 deliveries per hour**, so even a short disruption can sharply reduce income.
 - Workers are **zone-locked** — earnings depend on one dark store catchment, so disruption means a *full stop*, not a slowdown.
@@ -39,10 +39,10 @@ Traditional city-level parametric insurance suffers from **basis risk**: a trigg
 Rainfall at Ravi's dark store zone exceeds 7.6 mm/hour on a Tuesday night. Orders stop, Zepto limits available slots, and Ravi loses three hours of peak earnings (₹360–₹540). A weather sensor reading from his zone automatically initiates a claim. Within 15 minutes, ₹350–₹500 reaches his UPI wallet.
 
 **Scenario 2 — The Heat Stress Lock**  
-In April, the Heat Index in Ravi's zone exceeds 54°C — NDMA's "Danger" category for outdoor workers. Ravi cannot work safely. GigShield's environmental trigger fires, compensating two hours of lost income.
+In April, the Heat Index in Ravi's zone exceeds 54°C — NDMA's "Danger" category for outdoor workers. Ravi cannot work safely. SurakshaShift AI's environmental trigger fires, compensating two hours of lost income.
 
 **Scenario 3 — The Zone Closure**  
-A local government drive shuts down an illegal market next to the dark store. A police cordon blocks access for four hours. GigShield's social disruption trigger automatically initiates a payout.
+A local government drive shuts down an illegal market next to the dark store. A police cordon blocks access for four hours. SurakshaShift AI's social disruption trigger automatically initiates a payout.
 
 **Scenario 4 — The Attempted Fraud**  
 A partner claims rain caused a disruption, but their GPS log shows continuous movement in a nearby unaffected area. The claim is flagged and sent for human review instead of auto-payment.
@@ -69,7 +69,7 @@ All triggers are zone-specific and only fire for workers whose registered dark s
 
 ## 4. Weekly Premium Model — SmartWeek Pricing
 
-GigShield uses a **weekly subscription model** aligned with Zepto and Blinkit's payout cycles (Monday–Sunday earnings paid the following Tuesday/Wednesday). Every Sunday night, the ML Premium Engine recalculates the worker's premium for the coming week.
+SurakshaShift AI uses a **weekly subscription model** aligned with Zepto and Blinkit's payout cycles (Monday–Sunday earnings paid the following Tuesday/Wednesday). Every Sunday night, the ML Premium Engine recalculates the worker's premium for the coming week.
 
 ### 4.1 Feature Weights
 
@@ -99,8 +99,8 @@ GigShield uses a **weekly subscription model** aligned with Zepto and Blinkit's 
 
 ## 5. System Architecture
 
-GigShield System Architecture  
-*Figure 1 — GigShield Full System Architecture*
+SurakshaShift AI System Architecture  
+*Figure 1 — SurakshaShift AI Full System Architecture*
 
 The platform is organised into five layers:
 
@@ -164,7 +164,7 @@ Training data is synthesised from IMD rainfall history by pin code, OpenAQ AQI r
 
 ### 7.2 Income Baseline Fingerprinting *(Facebook Prophet)*
 
-Instead of assuming flat earnings, GigShield builds a worker-specific income curve from the first two weeks of order data. That allows payouts to better reflect **when** the disruption occurred. This improves fairness, not just model accuracy.
+Instead of assuming flat earnings, SurakshaShift AI builds a worker-specific income curve from the first two weeks of order data. That allows payouts to better reflect **when** the disruption occurred. This improves fairness, not just model accuracy.
 
 ### 7.3 Fraud Detection — Trajectory Anomaly Engine *(Isolation Forest)*
 
@@ -239,7 +239,7 @@ Historical weather, AQI trends, and city event calendars are used to forecast zo
 
 # 🚨 Adversarial Defense & Anti-Spoofing Strategy
 
-### GigShield — Market Crash Response
+### SurakshaShift AI — Market Crash Response
 
 **Team SharkBYTE · Guidewire DEVTrails 2026 · Filed: March 20, 2026**
 
@@ -278,7 +278,7 @@ A genuine stranded worker creates several matching signals at once: local weathe
 
 **A fraud ring member is more likely to fail multiple layers together**: mismatched signals, no pre-trigger history, suspicious filing patterns, and referral-network clustering.
 
-That is why GigShield uses a continuous **0–100 SHIELD Score** instead of a binary fraud flag.
+That is why SurakshaShift AI uses a continuous **0–100 SHIELD Score** instead of a binary fraud flag.
 
 ---
 
@@ -311,7 +311,7 @@ That is why GigShield uses a continuous **0–100 SHIELD Score** instead of a bi
 
 ## Liquidity Circuit Breaker
 
-If any zone receives **>2.5× its 90-day average claim volume within 4 hours**, GigShield auto-halts new claims from that zone and alerts the insurer's risk team. Claims already queued continue processing normally.
+If any zone receives **>2.5× its 90-day average claim volume within 4 hours**, SurakshaShift AI auto-halts new claims from that zone and alerts the insurer's risk team. Claims already queued continue processing normally.
 
 This turns a potential liquidity wipeout into a bounded and recoverable loss event.
 
