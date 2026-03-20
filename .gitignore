@@ -1,1 +1,15 @@
 .venv
+
+# Node / Vite
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Env / logs
+.env
+.env.*
+*.log
+
+# Python caches
+__pycache__/
+.pytest_cache/
