@@ -10,14 +10,14 @@
 
 ## 1. The Problem We Are Solving
 
-Traditional city-level parametric insurance products suffer from **basis risk**, which is the gap between when a trigger fires and when a specific worker actually loses income. It could be pouring in Mumbai while the Andheri West Zepto dark store zone stays completely dry. GigShield solves the **hyperlocal income protection gap** for India's Q-Commerce delivery workers (Zepto, Blinkit, Swiggy Instamart), who operate exclusively within a 1–3 km radius of a single dark store.
+Traditional city-level parametric insurance suffers from **basis risk**: a trigger may fire even when a worker's delivery zone is unaffected, or fail when that worker actually loses income. GigShield solves this for India's Q-Commerce delivery workers (Zepto, Blinkit, Swiggy Instamart), who typically operate within a **1–3 km radius of a single dark store**.
 
-- During peak periods, Q-Commerce workers complete **3–4 deliveries per hour**. A 40-minute rain delay costs more than it would for a food delivery partner still travelling to a restaurant.
-- Workers are **zone-locked** — all earnings originate from one dark store catchment. Any disruption is a *total earnings halt*, not a partial slowdown.
-- Dark stores are often in **basements or narrow market lanes** — the first locations to flood or become inaccessible.
-- Only **10% of gig workers** in India currently receive any social security benefits (ILO), and this sub-segment appears in virtually no existing insurance literature.
+- During peak periods, Q-Commerce workers complete **3–4 deliveries per hour**, so even a short disruption can sharply reduce income.
+- Workers are **zone-locked** — earnings depend on one dark store catchment, so disruption means a *full stop*, not a slowdown.
+- Dark stores are often located in **basements or narrow market lanes**, making them more vulnerable to flooding and access restrictions.
+- Only **10% of gig workers** in India currently receive any social security benefits (ILO), and this segment remains largely uncovered.
 
-> 📌 **Key Insight:** The unit of risk for a Q-Commerce partner is not the city, not the neighbourhood — it is their specific dark store polygon.
+> 📌 **Key Insight:** The true unit of risk is not the city or neighbourhood — it is the worker's specific dark store polygon.
 
 ---
 
@@ -35,17 +35,17 @@ Traditional city-level parametric insurance products suffer from **basis risk**,
 
 ### Persona Scenarios
 
-**Scenario 1 — The Monsoon Stop**
+**Scenario 1 — The Monsoon Stop**  
 Rainfall at Ravi's dark store zone exceeds 7.6 mm/hour on a Tuesday night. Orders stop, Zepto limits available slots, and Ravi loses three hours of peak earnings (₹360–₹540). A weather sensor reading from his zone automatically initiates a claim. Within 15 minutes, ₹350–₹500 reaches his UPI wallet.
 
-**Scenario 2 — The Heat Stress Lock**
+**Scenario 2 — The Heat Stress Lock**  
 In April, the Heat Index in Ravi's zone exceeds 54°C — NDMA's "Danger" category for outdoor workers. Ravi cannot work safely. GigShield's environmental trigger fires, compensating two hours of lost income.
 
-**Scenario 3 — The Zone Closure**
-A local government drive shuts down an illegal market adjacent to the dark store. A police cordon blocks access for four hours. GigShield's social disruption trigger automatically initiates a payout.
+**Scenario 3 — The Zone Closure**  
+A local government drive shuts down an illegal market next to the dark store. A police cordon blocks access for four hours. GigShield's social disruption trigger automatically initiates a payout.
 
-**Scenario 4 — The Attempted Fraud**
-A partner claims rain caused a disruption, but their device GPS log shows continuous movement in an unaffected nearby area. The Anomaly Detection model flags this as suspicious and routes it to a human reviewer instead of auto-paying.
+**Scenario 4 — The Attempted Fraud**  
+A partner claims rain caused a disruption, but their GPS log shows continuous movement in a nearby unaffected area. The claim is flagged and sent for human review instead of auto-payment.
 
 ---
 
@@ -69,7 +69,7 @@ All triggers are zone-specific and only fire for workers whose registered dark s
 
 ## 4. Weekly Premium Model — SmartWeek Pricing
 
-GigShield operates on a **weekly subscription** aligned with Zepto and Blinkit's weekly payout cycles (Monday–Sunday earnings paid the following Tuesday/Wednesday). Every Sunday night the ML Premium Engine recalculates each worker's personal premium for the coming week.
+GigShield uses a **weekly subscription model** aligned with Zepto and Blinkit's payout cycles (Monday–Sunday earnings paid the following Tuesday/Wednesday). Every Sunday night, the ML Premium Engine recalculates the worker's premium for the coming week.
 
 ### 4.1 Feature Weights
 
@@ -93,13 +93,13 @@ GigShield operates on a **weekly subscription** aligned with Zepto and Blinkit's
 | 🟣 **Full Shield**     | ₹65          | Env + AQI + Social/Curfew + Dark Store Closure | ₹1,600            |
 
 
-> 💡 **Pricing Rationale:** The maximum weekly payout cap (₹600–₹1,600) represents 20–40% of the income attributed to disruptions. The Standard Shield gross premium-to-coverage ratio of 4.2% is viable for a high-frequency disruption product in a monsoon climate.
+> 💡 **Pricing Rationale:** The weekly payout cap (₹600–₹1,600) covers roughly 20–40% of disruption-linked income loss. The Standard Shield premium-to-coverage ratio of 4.2% is viable for a high-frequency product in a monsoon-prone market.
 
 ---
 
 ## 5. System Architecture
 
-GigShield System Architecture
+GigShield System Architecture  
 *Figure 1 — GigShield Full System Architecture*
 
 The platform is organised into five layers:
@@ -147,7 +147,7 @@ Background engine polls 5 data sources every 15 minutes:
 ### Step 5 — Payout
 
 - UPI transfer (Razorpay test mode) or wallet credit
-- Worker receives push notification with disruption type, duration, and payout amount
+- Worker receives a push notification with disruption type, duration, and payout amount
 
 ### Step 6 — Analytics Dashboards
 
@@ -160,19 +160,19 @@ Background engine polls 5 data sources every 15 minutes:
 
 ### 7.1 Dynamic Premium Calculation Engine *(XGBoost)*
 
-Training data is synthesised from IMD historical rainfall frequency by pin code, OpenAQ historical AQI readings, and documented net earnings distributions. Output: a personalised weekly premium (₹25–₹65) with a plain-language explanation the worker can read.
+Training data is synthesised from IMD rainfall history by pin code, OpenAQ AQI readings, and documented earnings distributions. Output: a personalised weekly premium (₹25–₹65) with a clear worker-facing explanation.
 
 ### 7.2 Income Baseline Fingerprinting *(Facebook Prophet)*
 
-Rather than assuming uniform earnings, GigShield builds a personal income curve from the worker's first two weeks of order data. A worker earning ₹600 on Tuesday nights but ₹200 on Tuesday mornings receives proportionately different compensation for the same disruption duration depending on *when* it occurred. This is a **fairness mechanism**, not merely a technical optimisation.
+Instead of assuming flat earnings, GigShield builds a worker-specific income curve from the first two weeks of order data. That allows payouts to better reflect **when** the disruption occurred. This improves fairness, not just model accuracy.
 
 ### 7.3 Fraud Detection — Trajectory Anomaly Engine *(Isolation Forest)*
 
-Features: average speed during the claimed disruption window, distance from the dark store centroid, movement entropy, deviation from the worker's own 90-day GPS historical baseline. An AQI trigger with a worker GPS 8 km from their registered zone is an automatic escalation flag.
+Features include average speed during the disruption window, distance from the dark store centroid, movement entropy, and deviation from the worker's 90-day GPS baseline. A worker appearing 8 km away during a zone trigger is an automatic escalation case.
 
 ### 7.4 Predictive Disruption Dashboard *(LSTM)*
 
-Uses historical weather patterns, AQI trend series, and the city event calendar to predict zone-level disruption probability for the coming week. Output for insurers: estimated claims liability and recommended reserve adjustments before the week begins.
+Historical weather, AQI trends, and city event calendars are used to forecast zone-level disruption probability for the next week. This helps insurers estimate liability and plan reserves.
 
 ---
 
@@ -217,7 +217,7 @@ Uses historical weather patterns, AQI trend series, and the city event calendar 
 | **Net weekly margin (before ops)**     | **~₹5–6 lakhs**        | Revenue minus claims                           |
 
 
-> 📊 A net weekly margin of ₹5–6 lakhs at 50,000 workers demonstrates a commercially sound foundation for a high-frequency disruption product in a monsoon-heavy operating environment.
+> 📊 A net weekly margin of ₹5–6 lakhs at 50,000 workers suggests a commercially sound base for a high-frequency disruption product.
 
 ---
 
@@ -251,11 +251,9 @@ Uses historical weather patterns, AQI trend series, and the city event calendar 
 
 ## The Core Asymmetry
 
-GPS coordinates are just numbers — any Android phone with Developer Mode can broadcast fake ones for free. But a fraud ring **cannot fake a complete, physically consistent behavioural signature across six independent sensor channels at once.**
+GPS coordinates are easy to fake. What is much harder to fake is a **consistent behavioural signature across multiple independent signals**.
 
-A genuine stranded worker produces a dozen corroborating signals simultaneously — barometer drops with the storm, cell towers confirm the neighbourhood, accelerometer shows someone sheltering, platform shows zero orders. These signals don't coordinate with each other. They're consistent because **physics is consistent.**
-
-A faker controls exactly one signal: the spoofed GPS coordinate. Every other signal keeps telling the truth.
+A genuine stranded worker creates several matching signals at once: local weather conditions, nearby network markers, motion patterns, and zero platform orders. A fraudster may spoof location, but matching every other layer at the same time is far harder.
 
 ---
 
@@ -276,11 +274,11 @@ A faker controls exactly one signal: the spoofed GPS coordinate. Every other sig
 
 ## Genuine Worker vs. Faker — The Decisive Difference
 
-**A genuine worker fails at most one layer** due to real circumstances — old phone without a barometer, basement with poor GPS, moved 400m to shelter. Single-layer failure → **Soft Hold**, not a rejection.
+**A genuine worker may fail one layer** because of real-world conditions — poor GPS, an older phone, or temporary movement to shelter. That should result in a **Soft Hold**, not a rejection.
 
-**A fraud ring member fails 4–5 layers simultaneously**: barometer mismatch, cell towers contradict GPS, no pre-trigger trajectory, part of a filing burst, referral-graph-connected to 20+ co-claimants.
+**A fraud ring member is more likely to fail multiple layers together**: mismatched signals, no pre-trigger history, suspicious filing patterns, and referral-network clustering.
 
-The SHIELD Score's continuous 0–100 scale — not a binary flag — is what separates them without punishing honest workers.
+That is why GigShield uses a continuous **0–100 SHIELD Score** instead of a binary fraud flag.
 
 ---
 
@@ -315,11 +313,11 @@ The SHIELD Score's continuous 0–100 scale — not a binary flag — is what se
 
 If any zone receives **>2.5× its 90-day average claim volume within 4 hours**, GigShield auto-halts new claims from that zone and alerts the insurer's risk team. Claims already queued continue processing normally.
 
-**Worst case for a 500-member ring:** some claims clear before the breaker fires, then nothing more goes through. A potential liquidity wipeout becomes a bounded, recoverable loss event.
+This turns a potential liquidity wipeout into a bounded and recoverable loss event.
 
 ---
 
-## Honest Limitations
+## Possible Limitations
 
 
 | Attack Vector                                                             | Why It Still Fails                                                                                                |
@@ -329,11 +327,8 @@ If any zone receives **>2.5× its 90-day average claim volume within 4 hours**, 
 | Slow-burn ring with accounts aged 3–6 months                              | Defeats new-account check only; spatial and temporal clustering fire regardless of account age                    |
 
 
-**We are not claiming this is unbreakable. We are claiming it is uneconomical to break at scale.** The resources required to defeat all six layers simultaneously will always exceed the expected payout of a ₹600 Basic Shield claim.
+**We are not claiming this is unbreakable. We are claiming it is uneconomical to break at scale.** Defeating all six layers consistently would cost more effort than the payout from a ₹600 Basic Shield claim.
 
 ---
 
-*Team SharkBYTE · Guidewire DEVTrails 2026*
-
-*Made with love for India's delivery workers who are not seen.*
-*Guidewire DEVTrails 2026 · Team SharkBYTE*
+*Team SharkBYTE · Guidewire DEVTrails 2026* 
