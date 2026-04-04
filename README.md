@@ -6,6 +6,8 @@
 
 > **Team SharkBYTE · Guidewire DEVTrails 2026** · Phase 2 worker prototype + API
 
+**Live worker app:** [https://sharkbytedevtrail.vercel.app/](https://sharkbytedevtrail.vercel.app/) — try the full flow in the browser (ensure the deployed API is reachable from `VITE_API_BASE` if you self-host the backend).
+
 ---
 
 ## Repository overview
@@ -35,7 +37,7 @@ npm install
 npm run dev
 ```
 
-Open the Vite URL (e.g. `http://localhost:5173`). **Demo OTP:** `123456`. Recommended evaluator flow: register → quote → activate policy → **Shift Guardian** → run a **simulator** trigger → watch **Automatic claim flow** → open **My claims**.
+**Local:** open the Vite URL (e.g. `http://localhost:5173`). **Hosted:** use the [live app](https://sharkbytedevtrail.vercel.app/). **Demo OTP:** `123456`. Recommended evaluator flow: register → quote → activate policy → **Shift Guardian** → run a **simulator** trigger → watch **Automatic claim flow** → open **My claims**.
 
 ```bash
 # Production build (CI-friendly)
