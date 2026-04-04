@@ -99,6 +99,9 @@ export const api = {
   processClaim: (claimId: number) =>
     request(`${API_BASE}/claims/process/${claimId}`, { method: "POST" }),
 
+  getShiftRecommendation: (workerId: number) =>
+    request(`${API_BASE}/shift-guardian/recommendation/${workerId}`),
+
   // Events
   ingestWeather: (data: any) =>
     request(`${API_BASE}/events/ingest/weather`, {

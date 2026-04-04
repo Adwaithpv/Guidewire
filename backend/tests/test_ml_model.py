@@ -27,18 +27,26 @@ def test_ml_premium_in_range() -> None:
 
 
 def test_high_risk_higher_premium() -> None:
-    """Higher risk factors should generally produce higher premiums."""
-    model = PremiumModel()
-    model.train()
-    low_risk = model.predict_premium(
-        rain_risk=0.1, flood_risk=0.05, aqi_risk=0.05,
-        closure_risk=0.02, shift_exposure=0.3,
-        avg_weekly_income=3000, city="Jaipur",
+    """Blended quote (80% actuarial) rises with exposure when not capped at ₹99."""
+    income = 230
+    city = "Mumbai"
+    low_risk = quote_premium(
+        rain_risk=0.1,
+        flood_risk=0.05,
+        aqi_risk=0.05,
+        closure_risk=0.02,
+        shift_exposure=0.3,
+        avg_weekly_income=income,
+        city=city,
     )
-    high_risk = model.predict_premium(
-        rain_risk=0.9, flood_risk=0.8, aqi_risk=0.7,
-        closure_risk=0.5, shift_exposure=0.9,
-        avg_weekly_income=3000, city="Mumbai",
+    high_risk = quote_premium(
+        rain_risk=0.9,
+        flood_risk=0.8,
+        aqi_risk=0.7,
+        closure_risk=0.5,
+        shift_exposure=0.9,
+        avg_weekly_income=income,
+        city=city,
     )
     assert high_risk > low_risk
 

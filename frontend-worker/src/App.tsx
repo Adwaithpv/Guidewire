@@ -39,6 +39,8 @@ function App() {
 
   const [loading, setLoading] = useState(false);
   const [triggerLoading, setTriggerLoading] = useState<string | null>(null);
+  const [shiftRec, setShiftRec] = useState<any>(null);
+  const [shiftRecLoading, setShiftRecLoading] = useState(false);
 
   // Dashboard data refresh
   const fetchDashboardData = useCallback(async () => {
@@ -67,6 +69,19 @@ function App() {
       console.error(e);
     }
   }, [profile?.city]);
+
+  const fetchShiftRecommendation = useCallback(async () => {
+    if (!workerId) return;
+    setShiftRecLoading(true);
+    try {
+      const rec = await api.getShiftRecommendation(workerId);
+      setShiftRec(rec);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setShiftRecLoading(false);
+    }
+  }, [workerId]);
 
   useEffect(() => {
     let interval: number;
@@ -665,9 +680,9 @@ function App() {
               {riskQuote.explanation}
             </p>
             <p style={{ color: "var(--text-dim)", fontSize: "0.78rem", lineHeight: 1.5, marginBottom: "16px" }}>
-              The bars below are <strong>global feature importances</strong> from the gradient-boosting model fit on
-              synthetic history. If “rain risk” stays ~50% here while live rain is low, that is expected: it means the
-              trees rely heavily on rain as a feature <em>in general</em>, not that it is raining 50% right now.
+              The bars below are <strong>global feature importances</strong> from the GBM fit on actuarial-anchored
+              training scenarios. If rain stays high here while live rain is low, that reflects how often the model
+              splits on rain in training—not current rainfall.
             </p>
 
             <div className="feature-importance-list">
@@ -791,6 +806,198 @@ function App() {
               </span>
               <span className="stat-sub">Risk engine v1</span>
             </div>
+          </div>
+
+          <div className="card shift-guardian-card" style={{ marginTop: "28px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
+              <h3 style={{ display: "flex", alignItems: "center", gap: "8px", margin: 0, flexWrap: "wrap" }}>
+                <span>🧭</span> Shift Guardian
+                <span
+                  style={{
+                    fontSize: "0.72rem",
+                    padding: "3px 8px",
+                    borderRadius: "999px",
+                    background: "hsla(140,60%,55%,0.15)",
+                    border: "1px solid var(--success)",
+                    color: "var(--success)",
+                    fontWeight: 700,
+                    letterSpacing: "0.06em",
+                  }}
+                >
+                  AI-POWERED
+                </span>
+              </h3>
+              <button
+                type="button"
+                onClick={fetchShiftRecommendation}
+                disabled={shiftRecLoading}
+                style={{
+                  padding: "8px 16px",
+                  fontSize: "0.85rem",
+                  borderRadius: "8px",
+                  background: "hsla(250,85%,65%,0.15)",
+                  border: "1px solid var(--primary)",
+                  color: "var(--primary-hover)",
+                  cursor: shiftRecLoading ? "wait" : "pointer",
+                }}
+              >
+                {shiftRecLoading ? "Analysing zones…" : "Check before I start shift →"}
+              </button>
+            </div>
+
+            {!shiftRec && !shiftRecLoading && (
+              <div style={{ textAlign: "center", padding: "28px 0", color: "var(--text-dim)", fontSize: "0.9rem" }}>
+                Run a check before your shift to compare your zone with nearby areas using live weather, AQI, and news signals.
+              </div>
+            )}
+
+            {shiftRecLoading && <div className="shimmer-block" style={{ height: "160px" }} />}
+
+            {shiftRec && !shiftRecLoading && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div
+                  style={{
+                    padding: "16px",
+                    borderRadius: "12px",
+                    background: shiftRec.alert_type === "all_clear" ? "var(--success-bg)" : "var(--warning-bg)",
+                    border: `1px solid ${shiftRec.alert_type === "all_clear" ? "var(--success)" : "var(--warning)"}`,
+                    fontSize: "0.9rem",
+                    lineHeight: 1.6,
+                    color: shiftRec.alert_type === "all_clear" ? "var(--success)" : "var(--warning)",
+                  }}
+                >
+                  {shiftRec.recommendation_text}
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div
+                    style={{
+                      padding: "14px",
+                      borderRadius: "10px",
+                      background: "hsla(210,20%,10%,0.5)",
+                      border: "1px solid var(--border)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "0.72rem",
+                        color: "var(--text-dim)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      Your zone
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: "8px" }}>
+                      📍 {shiftRec.current_zone?.zone_name}
+                    </div>
+                    <div style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                      Disruption:{" "}
+                      <strong style={{ color: "var(--warning)" }}>{shiftRec.current_zone?.disruption_probability}%</strong>
+                    </div>
+                    <div style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                      Safety score: <strong>{shiftRec.current_zone?.income_protection_score}</strong>/100
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      padding: "14px",
+                      borderRadius: "10px",
+                      background: "hsla(140,60%,55%,0.08)",
+                      border: "1px solid var(--success)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: "0.72rem",
+                        color: "var(--success)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      Recommended
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: "8px" }}>
+                      ✅ {shiftRec.recommended_zone?.zone_name}
+                    </div>
+                    <div style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                      Disruption:{" "}
+                      <strong style={{ color: "var(--success)" }}>
+                        {shiftRec.recommended_zone?.disruption_probability}%
+                      </strong>
+                    </div>
+                    <div style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                      Safety score: <strong>{shiftRec.recommended_zone?.income_protection_score}</strong>/100
+                    </div>
+                  </div>
+                </div>
+
+                {shiftRec.estimated_income_difference > 0 && (
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      borderRadius: "10px",
+                      background: "hsla(250,85%,65%,0.1)",
+                      border: "1px solid var(--primary)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: "8px",
+                    }}
+                  >
+                    <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                      Estimated income protected by switching zones
+                    </span>
+                    <span style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--primary-hover)" }}>
+                      +₹{Number(shiftRec.estimated_income_difference).toFixed(0)}
+                    </span>
+                  </div>
+                )}
+
+                {shiftRec.alternatives?.length > 0 && (
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "0.75rem",
+                        color: "var(--text-dim)",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      Nearby zones compared
+                    </div>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      {[shiftRec.current_zone, ...shiftRec.alternatives].map((z: any) => (
+                        <div
+                          key={z.zone_name}
+                          style={{
+                            padding: "8px 12px",
+                            borderRadius: "8px",
+                            fontSize: "0.78rem",
+                            background: "hsla(210,20%,12%,0.6)",
+                            border: "1px solid var(--border)",
+                          }}
+                        >
+                          <div style={{ fontWeight: 600 }}>{z.zone_name}</div>
+                          <div style={{ color: "var(--text-dim)", marginTop: "2px" }}>
+                            {z.disruption_probability}% · {z.risk_level}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ fontSize: "0.75rem", color: "var(--text-dim)" }}>
+                  Window: {shiftRec.forecast_window} · {shiftRec.generated_at && new Date(shiftRec.generated_at).toLocaleString("en-IN")}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="card simulator-card" style={{ marginTop: "28px" }}>

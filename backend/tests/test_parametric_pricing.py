@@ -50,8 +50,11 @@ def test_heavy_rain_trigger_requires_mm_when_payload_present() -> None:
 
 
 def test_actuarial_premium_rises_with_exposure() -> None:
-    low = actuarial_weekly_premium(0.1, 0.05, 0.05, 0.05, 0.35, 2800, "Jaipur")
-    high = actuarial_weekly_premium(0.55, 0.45, 0.4, 0.12, 0.85, 2800, "Mumbai")
+    # Keep max_payout × composite low enough that both sides stay below the ₹99 cap
+    # so ordering is visible (typical demo incomes often clamp both quotes to 99).
+    income = 230
+    low = actuarial_weekly_premium(0.1, 0.05, 0.05, 0.05, 0.35, income, "Mumbai")
+    high = actuarial_weekly_premium(0.55, 0.45, 0.4, 0.12, 0.85, income, "Mumbai")
     assert 19 <= low <= 99
     assert 19 <= high <= 99
     assert high > low

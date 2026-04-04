@@ -61,7 +61,7 @@ def quote_premium(
         rain_risk, flood_risk, aqi_risk, closure_risk,
         shift_exposure, avg_weekly_income, city,
     )
-    return blend_premium(actuarial, ml, ml_weight=0.35)
+    return blend_premium(actuarial, ml, ml_weight=0.20)
 
 
 def quote_max_payout(avg_weekly_income: float) -> float:
@@ -73,12 +73,13 @@ def get_risk_explanation(city: str = "Bengaluru") -> dict:
     importances = _ml_model.get_feature_importances()
     top_factor = max(importances, key=importances.get)  # type: ignore[arg-type]
     explanation = (
-        f"Weekly premium combines a transparent loss-cost formula (admin + exposure × your "
-        f"max weekly benefit cap) with an ML adjustment for {city}. "
-        f"The chart labeled model sensitivity shows how often each factor appears in "
-        f"gradient-boosting splits on training data, not today's live rain reading. "
-        f"Use the this-quote exposure bars for the actual inputs from weather, AQI, and news. "
-        f"Claims require a verified parametric event for your zone; news alone only nudges pricing."
+        f"About 80% of your weekly premium comes from an actuarial formula: admin load plus "
+        f"expected loss (max payout × exposure) grossed up for a 65% loss-ratio target, "
+        f"then a 15% margin — with city weights aligned to IMD-style regional rainfall exposure. "
+        f"About 20% is a GBM blend trained on actuarial-anchored scenarios. "
+        f"The sensitivity chart reflects tree splits on that training set, not live rain %. "
+        f"Use the this-quote exposure bars for today's inputs. "
+        f"Claims need a verified zone event; news only nudges pricing."
     )
     return {"importances": importances, "explanation": explanation}
 
