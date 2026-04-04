@@ -57,13 +57,36 @@ def get_worker_profile(worker_id: int, db: Session = Depends(get_db)) -> dict:
     if not profile:
         raise HTTPException(status_code=404, detail="Worker not found")
     zone = db.scalar(select(Zone).where(Zone.id == profile.primary_zone_id))
+    user = db.scalar(select(User).where(User.id == profile.user_id))
     return {
         "id": profile.id,
         "user_id": profile.user_id,
+        "name": user.name if user else "Worker",
+        "phone": user.phone if user else "",
         "persona_type": profile.persona_type,
         "platform_name": profile.platform_name,
         "avg_weekly_income": profile.avg_weekly_income,
+        "city": zone.city if zone else "",
         "zone_name": zone.zone_name if zone else None,
         "shift_type": profile.shift_type,
+        "gps_enabled": profile.gps_enabled,
+        "payout_upi": profile.payout_upi,
         "risk_score": profile.risk_score,
     }
+
+
+@router.get("/all")
+def list_workers(db: Session = Depends(get_db)) -> list[dict]:
+    profiles = db.scalars(select(WorkerProfile).order_by(WorkerProfile.id.desc())).all()
+    results = []
+    for p in profiles:
+        user = db.scalar(select(User).where(User.id == p.user_id))
+        zone = db.scalar(select(Zone).where(Zone.id == p.primary_zone_id))
+        results.append({
+            "id": p.id,
+            "name": user.name if user else "Worker",
+            "platform_name": p.platform_name,
+            "city": zone.city if zone else "",
+            "risk_score": p.risk_score,
+        })
+    return results

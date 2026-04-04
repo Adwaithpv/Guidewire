@@ -1,6 +1,13 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Load backend/.env regardless of current working directory
+_backend_root = Path(__file__).resolve().parent.parent
+load_dotenv(_backend_root / ".env")
 from typing import Generator
 
 from sqlalchemy import create_engine

@@ -6,7 +6,7 @@ from app.database import get_db
 from app.models.entities import Policy, PolicyTrigger, WorkerProfile
 from app.schemas.common import PolicyCreateRequest, PolicyQuoteRequest, PolicyQuoteResponse
 from app.services.policy_service import coverage_window, default_triggers
-from app.services.risk_service import quote_premium
+from app.services.risk_service import fetch_live_risk_factors_sync, quote_premium, shift_type_to_exposure
 
 router = APIRouter(prefix="/policies", tags=["policies"])
 
@@ -16,7 +16,21 @@ def policy_quote(payload: PolicyQuoteRequest, db: Session = Depends(get_db)) -> 
     worker = db.scalar(select(WorkerProfile).where(WorkerProfile.id == payload.worker_id))
     if not worker:
         raise HTTPException(status_code=404, detail="Worker not found")
-    premium = quote_premium(payload.risk_score)
+    from app.models.entities import Zone
+
+    zone = db.scalar(select(Zone).where(Zone.id == worker.primary_zone_id))
+    city = zone.city if zone else "Bengaluru"
+    live = fetch_live_risk_factors_sync(city)
+    shift_exposure = shift_type_to_exposure(worker.shift_type)
+    premium = quote_premium(
+        live.rain_risk,
+        live.flood_risk,
+        live.aqi_risk,
+        live.closure_risk,
+        shift_exposure,
+        worker.avg_weekly_income,
+        city,
+    )
     max_weekly_payout = round(worker.avg_weekly_income * 0.4, 2)
     return PolicyQuoteResponse(
         premium_weekly=premium,

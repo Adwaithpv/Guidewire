@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.entities import Claim
-from app.schemas.common import ProcessClaimResponse
+from app.schemas.common import ClaimsSummary, ProcessClaimResponse
 from app.services.fraud_service import compute_fraud_score, review_status
 
 router = APIRouter(prefix="/claims", tags=["claims"])
@@ -17,13 +17,29 @@ def get_claims(worker_id: int, db: Session = Depends(get_db)) -> list[dict]:
         {
             "id": c.id,
             "event_id": c.event_id,
+            "claim_type": c.claim_type,
             "status": c.status,
             "estimated_loss": float(c.estimated_loss),
             "approved_payout": float(c.approved_payout),
+            "auto_created": c.auto_created,
             "created_at": c.created_at,
         }
         for c in claims
     ]
+
+
+@router.get("/summary/{worker_id}", response_model=ClaimsSummary)
+def claims_summary(worker_id: int, db: Session = Depends(get_db)) -> ClaimsSummary:
+    claims = db.scalars(select(Claim).where(Claim.worker_id == worker_id)).all()
+    approved = [c for c in claims if c.status == "approved"]
+    pending = [c for c in claims if c.status in ("validation_pending", "fraud_check")]
+    return ClaimsSummary(
+        worker_id=worker_id,
+        total_claims=len(claims),
+        approved_claims=len(approved),
+        total_payout=round(sum(float(c.approved_payout) for c in approved), 2),
+        pending_claims=len(pending),
+    )
 
 
 @router.post("/manual-review/{claim_id}")

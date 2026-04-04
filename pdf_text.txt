@@ -1,0 +1,210 @@
+ 
+ 
+ 
+Guidewire DEVTrails 2026 
+ 
+ 
+Problem Statement: AI-Powered Insurance for India’s 
+Gig Economy 
+ 
+ 
+The Problem We're Solving: 
+India’s platform-based delivery partners (Zomato, Swiggy, Zepto, Amazon, Dunzo etc.) 
+are the backbone of our fast-paced digital economy. However, external disruptions such 
+as extreme weather, pollution, and natural disasters can reduce their working hours and 
+cause them to lose 20–30% of their monthly earnings. Currently, gig workers have no 
+income protection against these uncontrollable events. When disruptions occur, they 
+bear the full financial loss with no safety net. 
+ 
+ 
+The Challenge: 
+Build an AI-enabled parametric insurance platform that safeguards gig workers 
+against income loss caused by external disruptions such as extreme weather or 
+environmental conditions. The solution should provide automated coverage and 
+payouts, incorporate intelligent fraud detection mechanisms, and operate on a simple 
+weekly pricing model aligned with the typical earnings cycle of gig workers. 
+ 
+ 
+Critical Constraints: 
+1. You must strictly exclude coverage for health, life, accidents, or vehicle repairs. 
+2. Your financial model must be structured on a Weekly pricing basis to match the 
+typical payout cycle of a gig worker. 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 
+Core Disruptions to Address (Indicative Examples for Your 
+Persona) 
+ 
+IMPORTANT NOTE ON DISRUPTIONS: The disruptions mentioned below are 
+indicative examples of external factors causing income loss. Teams MUST use their 
+own ideation to identify the most relevant external disruption parameters for their 
+chosen delivery segment. 
+Disruption Type 
+Examples (Adapt for 
+YOUR Persona) 
+Impact (Loss of Income) 
+Environmental 
+Extreme heat, Heavy 
+rain, Floods, Severe 
+Pollution 
+Cannot work outdoors / 
+Deliveries halted 
+Social 
+Unplanned curfews, 
+local strikes, sudden 
+market/zone closures 
+Inability to access 
+pickup/drop locations 
+Note: You are insuring the INCOME lost during these events, not the cost of fixing 
+external issues (e.g., no vehicle repair payouts). 
+ 
+
+ 
+ 
+Technical Requirements 
+Must-Have Features (Indicative Guidelines) 
+IMPORTANT NOTE: Evaluate what genuinely helps YOUR consumers. 
+●​ AI-Powered Risk Assessment 
+○​ Dynamic premium calculation (Must be structured as a Weekly pricing 
+model) 
+○​ Predictive risk modeling specific to the persona 
+●​ Intelligent Fraud Detection 
+○​ Anomaly detection in claims 
+○​ Location and activity validation 
+○​ Duplicate claim prevention 
+●​ Parametric Automation 
+○​ Real-time trigger monitoring  
+○​ Automatic claim initiation for identified disruptions 
+○​ Instant payout processing for lost income 
+●​ Integration Capabilities 
+○​ Weather APIs (can use free tiers or mocks) 
+○​ Traffic data (mocks acceptable) 
+○​ Platform APIs (simulated is acceptable) 
+○​ Payment systems (mock/sandbox/trial versions acceptable) 
+Note: These are the must have features. But the teams are free to ideate, innovate and 
+bring in other perspectives on top.  
+ 
+
+ 
+ 
+Deliverable Expectations 
+Your solution should demonstrate at least the below:  
+●​ Optimized onboarding for your delivery persona. 
+●​ Risk profiling using relevant AI/ML. 
+●​ Policy creation with appropriate pricing structured on a Weekly basis. 
+●​ Claim triggering through relevant parametric events (Loss of income triggers 
+only). 
+●​ Payout processing via appropriate channels. 
+●​ Analytics dashboard showing relevant metrics. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+ 
+6-Week Journey & Problem Breakdown 
+Over the next 6 weeks, you will build an AI-powered, parametric insurance platform 
+designed exclusively for platform-based Delivery Partners. Your mission is to protect 
+their livelihoods from uncontrollable external disruptions (weather, app crashes, 
+curfews) that cause immediate loss of daily wages. 
+THE GOLDEN RULES (Read Before Starting) 
+1.​ Persona Focus: You must choose only delivery partners sub-category: Food 
+(Zomato/Swiggy), E-commerce (Amazon/Flipkart), or Grocery/Q-Commerce 
+(Zepto/Blinkit) and so on. 
+2.​ Coverage Scope: LOSS OF INCOME ONLY. You are building a safety net for 
+lost hours/wages. You must strictly exclude features for vehicle repairs, health 
+insurance, or accident medical bills. 
+3.​ Weekly Pricing: Gig workers operate week-to-week. Your financial/premium 
+model must be structured on a Weekly basis. 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+Timeline Overview 
+Phase 1 [March 4 - 20]: Ideation & Foundation (Weeks 1-2) 
+Theme: "Ideate & Know Your Delivery Worker" This phase is dedicated to research, 
+ideation, planning, and building the foundational elements of your solution. 
+Submission Deadline for Phase 1 Deliverables: March 20, End of Day. 
+Deliverables: 
+1. The Idea Document 
+●​ A concise readme document in your Github Repository outlining your core 
+strategy covering the below: 
+○​ Detail out the requirement with persona based scenarios and the workflow 
+for your application. 
+○​ Explain how your Weekly premium model works, define your parametric 
+triggers, and justify your choice between a Web or Mobile platform. 
+○​ Detail your plans of integrating AI/ML into the workflow (Premium 
+calculation, Fraud Detection and so on). 
+○​ Outline your tech stack and development plan. 
+○​ Anything else that you think is relevant. 
+●​ A link to your Git repository (GitHub/GitLab) consisting of the Readme.md file. 
+The same repo to be used for the subsequent phases. 
+●​ A 2-minute video uploaded to a publicly accessible link., outlining your strategy, 
+plan of execution and your prototype with minimal scope defined for this phase. 
+ 
+
+ 
+ 
+Phase 2 [March 21 - April 4]: Automation & Protection (Weeks 3-4) 
+Theme: "Protect Your Worker" 
+Deliverables: 
+●​ A 2-minute demo video uploaded to a publicly accessible link. 
+●​ Executable source code and solution submitted should showcase the below: 
+○​ Registration Process 
+○​ Insurance Policy Management 
+○​ Dynamic Premium Calculation 
+○​ Claims Management 
+Tips: 
+●​ AI Integration Example: Dynamic Pricing Models. Use Machine Learning to 
+adjust the Weekly premium based on hyper-local risk factors (e.g., the model 
+charges ₹2 less per week if the worker operates in a zone historically safe from 
+water logging, or dynamically offers increased coverage hours based on 
+predictive weather modelling). 
+●​ Build 3-5 automated triggers using public/mock APIs to identify the disruptions 
+leading to loss of income. 
+●​ A seamless, zero-touch claim process. What would be the best User Experience 
+for your customers? 
+ 
+ 
+
+ 
+ 
+Phase 3 [April 5 - 17]: Scale & Optimise (Weeks 5-6) 
+Theme: "Perfect for Your Worker" 
+Deliverables: 
+●​ Advanced Fraud Detection: Catch delivery-specific fraud (e.g., GPS spoofing, 
+fake weather claims using historical data). 
+●​ Instant Payout System (Simulated): Integrate mock payment gateways 
+(Razorpay test mode, Stripe sandbox, or UPI simulators) to demonstrate how the 
+worker receives their lost wages instantly. 
+●​ Intelligent Dashboard. 
+○​ For Workers: Earnings protected, active weekly coverage. 
+○​ For Insurers (Admin): Loss ratios, predictive analytics on next week's likely 
+weather/disruption claims. 
+●​ The Final Submission Package. Consolidate your 6 weeks of development into 
+the final artefacts required for Week 6 judging. You must upload: 
+○​ A 5-minute demo video: A screen-capture walkthrough video of your 
+platform in action uploaded to a publicly accessible link. You must visually 
+demonstrate a simulated external disruption (e.g., triggering a fake 
+rainstorm) and show the automated AI claim approval and payout process. 
+○​ Final Pitch Deck: Your presentation slides (PDF) covering your specific 
+delivery persona, your AI & fraud architecture, and the business viability of 
+your Weekly pricing model. 
+ 

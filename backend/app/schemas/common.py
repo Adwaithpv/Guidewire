@@ -37,6 +37,7 @@ class WorkerProfileResponse(BaseModel):
 
 class RiskQuoteRequest(BaseModel):
     worker_id: int
+    city: str = "Bengaluru"
     rain_risk: float = 0.3
     flood_risk: float = 0.2
     aqi_risk: float = 0.2
@@ -50,11 +51,12 @@ class RiskQuoteResponse(BaseModel):
     max_weekly_payout: float
     confidence_level: float
     explanation: str
+    feature_importances: dict[str, float] = {}
+    model_version: str = "actuarial-gbm-blend-v1"
 
 
 class PolicyQuoteRequest(BaseModel):
     worker_id: int
-    risk_score: float
 
 
 class PolicyQuoteResponse(BaseModel):
@@ -87,3 +89,46 @@ class ProcessClaimResponse(BaseModel):
     status: str
     approved_payout: float
 
+
+class LiveRiskFactors(BaseModel):
+    city: str
+    weather: dict = {}
+    aqi: dict = {}
+    rain_risk: float = 0.0
+    flood_risk: float = 0.0
+    aqi_risk: float = 0.0
+    closure_risk: float = 0.0
+    """From GNews (bandh/curfew/hartal/etc.) when configured; else mock baseline."""
+    closure_source: str = "mock"
+    closure_headlines: list[dict[str, Any]] = Field(default_factory=list)
+    overall_risk: str = "low"
+    is_disruptive: bool = False
+    fetched_at: str = ""
+
+
+class RiskQuoteLiveRequest(BaseModel):
+    worker_id: int
+
+
+class QuoteExposureInputs(BaseModel):
+    """Normalized 0–1 factors actually passed into actuarial + GBM for this quote."""
+
+    rain_risk: float
+    flood_risk: float
+    aqi_risk: float
+    closure_risk: float
+    shift_exposure: float
+    city: str
+
+
+class RiskQuoteLiveResponse(RiskQuoteResponse):
+    live_factors: LiveRiskFactors
+    quote_exposure_inputs: QuoteExposureInputs
+
+
+class ClaimsSummary(BaseModel):
+    worker_id: int
+    total_claims: int = 0
+    approved_claims: int = 0
+    total_payout: float = 0.0
+    pending_claims: int = 0

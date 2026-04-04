@@ -7,6 +7,12 @@ from sqlalchemy.orm import Session
 
 from app.models.entities import Claim, DisruptionEvent, FraudCheck, Policy, TriggerMatch, WorkerProfile
 from app.services.fraud_service import compute_fraud_score, review_status
+from app.services.parametric_rules import (
+    effective_loss_hours,
+    event_satisfies_trigger_index,
+    policy_trigger_for_event,
+    remaining_weekly_payout_budget,
+)
 from app.services.payout_service import estimate_payout
 
 
@@ -29,8 +35,21 @@ def find_impacted_policies(db: Session, zone_id: int, started_at: datetime, ende
 def create_claim_candidates(db: Session, event: DisruptionEvent) -> list[Claim]:
     impacted = find_impacted_policies(db, event.zone_id, event.started_at, event.ended_at)
     claims: list[Claim] = []
-    disrupted_hours = max(1.0, (event.ended_at - event.started_at).total_seconds() / 3600.0)
     for worker, policy in impacted:
+        trig = policy_trigger_for_event(db, policy.id, event.event_type)
+        if trig is None:
+            continue
+        if not event_satisfies_trigger_index(event, trig):
+            continue
+
+        budget = remaining_weekly_payout_budget(db, policy)
+        if budget <= 0:
+            continue
+
+        disrupted_hours = effective_loss_hours(
+            worker.shift_type, event.started_at, event.ended_at
+        )
+
         existing = db.scalar(
             select(Claim).where(
                 Claim.worker_id == worker.id,
@@ -40,7 +59,9 @@ def create_claim_candidates(db: Session, event: DisruptionEvent) -> list[Claim]:
         )
         if existing:
             continue
-        estimated_loss, payout = estimate_payout(worker.avg_weekly_income, disrupted_hours, float(policy.max_weekly_payout))
+        estimated_loss, payout = estimate_payout(
+            worker.avg_weekly_income, disrupted_hours, budget
+        )
         match = TriggerMatch(
             event_id=event.id,
             worker_id=worker.id,
@@ -52,6 +73,7 @@ def create_claim_candidates(db: Session, event: DisruptionEvent) -> list[Claim]:
             worker_id=worker.id,
             policy_id=policy.id,
             event_id=event.id,
+            claim_type=event.event_type,
             status="validation_pending",
             estimated_loss=estimated_loss,
             approved_payout=payout,

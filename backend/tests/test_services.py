@@ -6,7 +6,7 @@ from app.services.risk_service import calculate_risk_score, quote_premium
 def test_risk_score_bounds() -> None:
     score = calculate_risk_score(1, 1, 1, 1, 1)
     assert 0 <= score <= 1
-    premium = quote_premium(score)
+    premium = quote_premium(0.5, 0.4, 0.3, 0.2, 0.8, 3500, "Bengaluru")
     assert 19 <= premium <= 99
 
 

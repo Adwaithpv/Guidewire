@@ -4,6 +4,7 @@ import random
 
 
 def estimate_payout(avg_weekly_income: float, disrupted_hours: float, cap_remaining: float) -> tuple[float, float]:
+    # ~42 effective delivery hours / week (6 days × ~7h) as implied wage rate for gig partners
     avg_hourly = avg_weekly_income / 42.0
     estimated_loss = disrupted_hours * avg_hourly
     payout = min(estimated_loss * 0.8, cap_remaining)
