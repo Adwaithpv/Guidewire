@@ -4,7 +4,65 @@
 
 *AI-Powered Parametric Insurance for India's Q-Commerce Delivery Workers*
 
-> **Team SharkBYTE · Phase 1 Submission · Guidewire DEVTrails 2026**
+> **Team SharkBYTE · Guidewire DEVTrails 2026** · Phase 2 worker prototype + API
+
+---
+
+## Repository overview
+
+| Path | What it is |
+|------|------------|
+| **`backend/`** | **FastAPI** app — SQLite by default, parametric event ingest, tiered pricing (actuarial + GBM), fraud scoring, claims, **Shift Guardian**, live risk factors (weather / AQI / news closure). |
+| **`frontend-worker/`** | **React 18 + Vite + TypeScript** — light fintech UI: OTP → profile → live quote → dashboard (policy, **My claims**, live conditions, disruption **simulator** with step-by-step claim pipeline animation). |
+
+### Quick start
+
+```bash
+# API (from repo root)
+cd backend
+python -m venv .venv
+# Windows: .venv\Scripts\activate  ·  macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+# Copy .env.example → .env (optional keys; mocks work when empty)
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+```bash
+# Worker UI
+cd frontend-worker
+npm install
+# Copy .env.example → .env (set VITE_API_BASE if API is not localhost:8000)
+npm run dev
+```
+
+Open the Vite URL (e.g. `http://localhost:5173`). **Demo OTP:** `123456`. Recommended evaluator flow: register → quote → activate policy → **Shift Guardian** → run a **simulator** trigger → watch **Automatic claim flow** → open **My claims**.
+
+```bash
+# Production build (CI-friendly)
+cd frontend-worker && npm run build
+```
+
+### Environment variables
+
+**`backend/.env`** (see `backend/.env.example`)
+
+| Variable | Role |
+|----------|------|
+| `OPENWEATHERMAP_API_KEY` | OpenWeatherMap for live weather / rainfall in quotes |
+| `WAQI_API_TOKEN` | WAQI for AQI |
+| `NEWSDATA_API_KEY` | Preferred source for India closure/bandh headlines |
+| `GNEWS_API_KEY` | Fallback news API if NewsData is unset or fails |
+| `DATABASE_URL` | Default `sqlite:///./surakshashift.db` |
+| `CORS_ORIGINS` | `*` in dev; comma-separated origins in production |
+
+**`frontend-worker/.env`** — `VITE_API_BASE` (API origin, default `http://localhost:8000`).
+
+### Implementation notes (honest scope)
+
+- **Pricing:** ~**80%** transparent actuarial / tiered formula + **~20%** GBM residual (`actuarial-gbm-blend-v1`). Traceable in `backend/app/services/risk_service.py`, `pricing_service.py`, `app/ml/premium_model.py`. The quote screen surfaces **`model_version`**.
+- **Simulator:** Ingests use `source_name` prefixed with `Mock …`; optional **`worker_id`** scopes claim creation to the logged-in worker (avoids one click → claims for all workers in the zone).
+- **Policies:** New purchase **supersedes** prior active policies for that worker; trigger engine enforces **one claim per worker per disruption event** to prevent duplicate rows from legacy data.
+- **External data:** Works with **mocks** when keys are empty; configure keys for live demos (OpenWeatherMap, WAQI, NewsData/GNews).
 
 ---
 
@@ -97,100 +155,62 @@ SurakshaShift AI uses a **weekly subscription model** aligned with Zepto and Bli
 
 ---
 
-## 5. System Architecture
+## 5. System Architecture *(this repository)*
 
-SurakshaShift AI System Architecture  
-*Figure 1 — SurakshaShift AI Full System Architecture*
+End-to-end data path for the Phase 2 prototype:
 
-The platform is organised into five layers:
+1. **External signals** — OpenWeatherMap, WAQI, NewsData.io / GNews (closure proxy); all optional with **mock fallbacks** when API keys are unset.
+2. **API layer** — **FastAPI** (`backend/app/main.py`): workers, auth (OTP), risk / quote-live, policies + triggers, claims, events ingest, Shift Guardian.
+3. **Persistence** — **SQLAlchemy** + **SQLite** (default) or any URL in `DATABASE_URL`; Alembic migrations under `backend/alembic/`.
+4. **Pricing & ML** — Actuarial/tiered premium + **scikit-learn GBM** residual in `app/ml/premium_model.py`; explanations and feature importances for the quote UI.
+5. **Parametric engine** — `app/services/trigger_engine.py`: zone + coverage window match, trigger thresholds, fraud score stub, claim creation; **dedupe** and **single active policy** rules documented above.
+6. **Worker UI** — **Vite + React**: onboarding, multi-plan quote, dashboard with live conditions, simulator, animated claim pipeline.
 
-1. **External Data Sources** — OpenWeatherMap, OpenAQ, Heat Index calculation, News API/Govt scraper, Zepto/Blinkit mock API
-2. **Real-Time Trigger Engine** — Polls every 15 minutes, zone-specific thresholds, 5 automated triggers
-3. **Core Processing Layer** — ML Engine (XGBoost/Prophet/Isolation Forest/LSTM), SHIELD Fraud Score, Claims Processor, Payout Engine
-4. **Infrastructure Layer** — Node.js + FastAPI backend, PostgreSQL + Redis, JWT + OTP auth, Vercel + Railway + Supabase
-5. **Frontend Layer** — Worker PWA, Insurer Dashboard, Zone Maps (Leaflet.js)
-
----
-
-## 6. Application Workflow
-
-### Step 1 — Onboarding
-
-- Worker signs up via mobile PWA
-- Aadhaar-lite KYC (DigiLocker mock)
-- Links delivery platform worker ID (Zepto/Blinkit mock API)
-- AI Risk Profiler: zone assignment, income baseline, historical disruption score
-- Weekly premium quoted in real time
-
-### Step 2 — Policy Subscription
-
-- Worker selects coverage tier for the coming week
-- Pays weekly premium via UPI (₹25–₹65 depending on tier and zone risk)
-- Policy record stored with zone polygon, coverage window, and payout caps
-
-### Step 3 — Real-Time Trigger Monitoring
-
-Background engine polls 5 data sources every 15 minutes:
-
-- Weather API (per dark store lat/long)
-- AQI feed (zone-level via OpenAQ)
-- Heat Index calculation (temp + humidity)
-- Government notification scraper / News API (curfews, bandhs)
-- Dark store operational status (mock platform API)
-
-### Step 4 — Automated Claim Initiation
-
-- On threshold breach: Fraud Pre-Check (GPS cross-validation, deduplication, anomaly score)
-- If clean: auto-approve and initiate payout within 10 minutes
-- If flagged: routed to insurer dashboard for manual review
-
-### Step 5 — Payout
-
-- UPI transfer (Razorpay test mode) or wallet credit
-- Worker receives a push notification with disruption type, duration, and payout amount
-
-### Step 6 — Analytics Dashboards
-
-- **Worker view:** weekly pay protected, coverage status, disruption history
-- **Insurer view:** loss ratio, zone risk heatmap, ML-predicted disruption probability
+*Roadmap items from the original vision (insurer console, Leaflet zones, Redis job runner, Prophet/LSTM pipelines, Razorpay) are not in this repo — they remain design targets.*
 
 ---
 
-## 7. AI / ML Integration Plan
+## 6. Application Workflow *(implemented app)*
 
-### 7.1 Dynamic Premium Calculation Engine *(XGBoost)*
+| Step | In the product |
+|------|----------------|
+| **1. OTP** | Phone + mock OTP verification → session moves to registration. |
+| **2. Profile** | City, zone, platform, income, shift, UPI — creates **worker** + **zone** as needed. |
+| **3. Quote** | **`/risk/quote-live`** returns live factors, **multi-plan** premiums, GBM explanation; **`model_version`** shown on screen. |
+| **4. Activate** | **`/policies/create`** — one active policy; triggers seeded from covered events. |
+| **5. Dashboard** | Stats, **Shift Guardian** (zone comparison), **Disruption Simulator** (mock ingest + animated steps), live weather/AQI strip, **My claims** (scoped to `worker_id`). |
+| **6. Claims** | Auto-created on matching ingest; fraud review path exists in schema; UPI payout is **represented** in copy, not a live payment rail in this build. |
 
-Training data is synthesised from IMD rainfall history by pin code, OpenAQ AQI readings, and documented earnings distributions. Output: a personalised weekly premium (₹25–₹65) with a clear worker-facing explanation.
-
-### 7.2 Income Baseline Fingerprinting *(Facebook Prophet)*
-
-Instead of assuming flat earnings, SurakshaShift AI builds a worker-specific income curve from the first two weeks of order data. That allows payouts to better reflect **when** the disruption occurred. This improves fairness, not just model accuracy.
-
-### 7.3 Fraud Detection — Trajectory Anomaly Engine *(Isolation Forest)*
-
-Features include average speed during the disruption window, distance from the dark store centroid, movement entropy, and deviation from the worker's 90-day GPS baseline. A worker appearing 8 km away during a zone trigger is an automatic escalation case.
-
-### 7.4 Predictive Disruption Dashboard *(LSTM)*
-
-Historical weather, AQI trends, and city event calendars are used to forecast zone-level disruption probability for the next week. This helps insurers estimate liability and plan reserves.
+Optional: **`GET /events/check-live/{city}`** can auto-ingest severe rain/AQI for zones in that city (uses **non-mock** dedupe rules).
 
 ---
 
-## 8. Technology Stack
+## 7. AI / ML in this build
+
+| Capability | Status | Where |
+|------------|--------|--------|
+| **Weekly premium** | **Shipped** — actuarial blend + GBM risk/premium predictors | `premium_model.py`, `risk_service.py`, `pricing_service.py` |
+| **Quote explanation** | **Shipped** — narrative + global feature importances | `get_risk_explanation()` |
+| **Fraud scoring (claims)** | **Simplified** — weighted score → approve vs manual review | `fraud_service.py`, `trigger_engine.py` |
+| **Prophet income curve / Isolation Forest GPS / LSTM forecast** | **Not implemented** — documented as **Phase 3+** research directions | — |
+
+**Evaluator sound bite:** *“About four-fifths of the weekly price is a transparent actuarial curve tied to exposure and city; the GBM adds a bounded residual so live APIs move the quote without a black box.”*
+
+---
+
+## 8. Technology Stack *(as shipped)*
 
 
-| Layer              | Technology                                       | Rationale                                                             |
-| ------------------ | ------------------------------------------------ | --------------------------------------------------------------------- |
-| **Frontend**       | React (PWA) + Tailwind CSS                       | Offline-capable, mobile-first, push notifications, no App Store delay |
-| **Backend API**    | Node.js (Express) + FastAPI (Python)             | Node for business logic; FastAPI for high-performance ML inference    |
-| **Database**       | PostgreSQL + Redis                               | Relational for policies/claims; Redis for real-time trigger state     |
-| **ML / AI**        | XGBoost, Prophet, scikit-learn, Isolation Forest | Mature libraries for all four ML use-cases in one Python ecosystem    |
-| **Weather API**    | OpenWeatherMap (free tier)                       | Real lat/long queries, `rain.1h` field, 60 calls/min free             |
-| **AQI API**        | OpenAQ (open source)                             | Zone-level AQI data for Indian cities                                 |
-| **Payments**       | Razorpay Test Mode                               | UPI simulation for full payout flow in Phase 1–2                      |
-| **Maps / Zone**    | Leaflet.js + GeoJSON                             | Zone polygon visualisation at zero cost                               |
-| **Infrastructure** | Vercel + Railway + Supabase                      | All free tiers; zero cloud cost in Phase 1–2                          |
-| **Auth**           | JWT + OTP (mock Twilio)                          | Phone-number-based auth fits the delivery partner persona             |
+| Layer | Technology | Notes |
+| ----- | ---------- | ----- |
+| **Worker frontend** | React 18, Vite 5, TypeScript | Custom CSS (Plus Jakarta Sans / DM Sans); responsive dashboard |
+| **Backend** | Python 3.11+, FastAPI, Uvicorn | REST JSON API |
+| **ORM / DB** | SQLAlchemy 2, SQLite default | PostgreSQL-compatible via `DATABASE_URL` |
+| **ML** | scikit-learn (GBM), NumPy | Premium and risk score |
+| **HTTP client** | httpx | Live weather / AQI / news |
+| **Tests** | pytest | Run: `cd backend && pytest` |
+
+**External APIs (optional keys)** — OpenWeatherMap, WAQI, NewsData.io, GNews (see `.env.example`).
 
 
 ---
