@@ -22,6 +22,11 @@ def create_worker_profile(payload: WorkerProfileCreate, db: Session = Depends(ge
         user = User(name=payload.name, phone=payload.phone, email=payload.email, city=payload.city)
         db.add(user)
         db.flush()
+    else:
+        # Same phone as a prior registration / demo — keep display name in sync with the form.
+        user.name = payload.name
+        user.email = payload.email
+        user.city = payload.city
 
     profile = db.scalar(select(WorkerProfile).where(WorkerProfile.user_id == user.id))
     if profile is None:

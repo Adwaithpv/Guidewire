@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { api, WorkerPayload } from "./services/api";
 
-type View = "otp" | "register" | "quote" | "dashboard";
+type View = "landing" | "otp" | "register" | "quote" | "dashboard";
 
 type DashboardSection = "home" | "policy" | "claims" | "live";
 
 function App() {
-  const [view, setView] = useState<View>("otp");
+  const [view, setView] = useState<View>("landing");
   const [dashboardSection, setDashboardSection] = useState<DashboardSection>("home");
   const [workerId, setWorkerId] = useState<number | null>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -332,6 +332,99 @@ function App() {
   };
 
   // ═══════════════════════════════════════════════════════════════
+  //  VIEW: LANDING
+  // ═══════════════════════════════════════════════════════════════
+  if (view === "landing") {
+    return (
+      <div className="landing">
+        <header className="landing-nav">
+          <div className="landing-brand">
+            <svg className="landing-brand-mark" width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+              <path
+                d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"
+                fill="hsl(22, 95%, 55%)"
+                stroke="hsl(22, 95%, 48%)"
+                strokeWidth="1.2"
+              />
+            </svg>
+            <span className="landing-brand-text">SurakshaShift</span>
+          </div>
+          <button type="button" className="landing-signin" onClick={() => setView("otp")}>
+            Sign in
+          </button>
+        </header>
+
+        <main className="landing-main">
+          <section className="landing-hero">
+            <p className="landing-eyebrow">Parametric income protection</p>
+            <h1 className="landing-headline">
+              Cover for every shift.
+              <span className="landing-headline-accent"> Peace for every ride.</span>
+            </h1>
+            <p className="landing-lede">
+              Weekly plans built for India&apos;s delivery workforce — rain, flood, air quality, closures, and platform outages
+              matched to <strong>your zone</strong>, not just your city.
+            </p>
+            <div className="landing-hero-ctas">
+              <button type="button" className="landing-btn-primary" onClick={() => setView("otp")}>
+                Get started
+              </button>
+              <p className="landing-hero-note">Takes under a minute · Demo OTP 123456</p>
+            </div>
+          </section>
+
+          <section className="landing-features" aria-label="Why SurakshaShift">
+            <div className="landing-feature">
+              <div className="landing-feature-icon" aria-hidden>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"
+                    stroke="hsl(22, 95%, 48%)"
+                    strokeWidth="1.5"
+                    fill="hsla(22, 95%, 55%, 0.12)"
+                  />
+                </svg>
+              </div>
+              <h2 className="landing-feature-title">Zone-sharp triggers</h2>
+              <p className="landing-feature-copy">Disruptions are verified against your delivery catchment — lower basis risk than city-wide products.</p>
+            </div>
+            <div className="landing-feature">
+              <div className="landing-feature-icon" aria-hidden>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M4 14h4l2-8 4 14 2-6h6"
+                    stroke="hsl(200, 65%, 40%)"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                  />
+                </svg>
+              </div>
+              <h2 className="landing-feature-title">Live risk pricing</h2>
+              <p className="landing-feature-copy">Weather, AQI, and news signals feed a transparent actuarial blend with an ML residual — every rupee is traceable.</p>
+            </div>
+            <div className="landing-feature">
+              <div className="landing-feature-icon" aria-hidden>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="4" y="6" width="16" height="12" rx="2" stroke="hsl(152, 55%, 38%)" strokeWidth="1.5" fill="hsla(152, 60%, 40%, 0.08)" />
+                  <path d="M8 10h8M8 14h5" stroke="hsl(152, 55%, 38%)" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </div>
+              <h2 className="landing-feature-title">Automated claims path</h2>
+              <p className="landing-feature-copy">Eligible events can flow from sensor to review to payout with fraud checks in between — see the pipeline in the dashboard demo.</p>
+            </div>
+          </section>
+
+          <p className="landing-footnote">
+            Data partners: OpenWeatherMap · WAQI · NewsData.io / GNews when configured
+          </p>
+        </main>
+      </div>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   //  VIEW: OTP VERIFICATION
   // ═══════════════════════════════════════════════════════════════
   if (view === "otp") {
@@ -552,6 +645,15 @@ function App() {
   if (view === "quote" && riskQuote) {
     const importances = riskQuote.feature_importances || {};
     const maxImp = Math.max(...Object.values(importances).map(Number), 0.01);
+    const importanceFriendly: Record<string, string> = {
+      rain_risk: "Heavy rain",
+      flood_risk: "Flooding",
+      aqi_risk: "Air quality",
+      closure_risk: "Local shutdowns & news",
+      shift_exposure: "When you work",
+      avg_weekly_income: "Your weekly income",
+      city_risk: "City you work in",
+    };
 
     const shiftTypeToExposure = (st: string) =>
       (
@@ -580,11 +682,11 @@ function App() {
 
     const exposureRows = exposureInputs
       ? [
-          { key: "rain_risk", label: "Rain exposure (this quote)" },
-          { key: "flood_risk", label: "Flood exposure (this quote)" },
-          { key: "aqi_risk", label: "AQI exposure (this quote)" },
-          { key: "closure_risk", label: "Closure signal (news / pricing)" },
-          { key: "shift_exposure", label: "Shift exposure (your schedule)" },
+          { key: "rain_risk", label: "Heavy rain risk" },
+          { key: "flood_risk", label: "Flood risk" },
+          { key: "aqi_risk", label: "Air quality (pollution)" },
+          { key: "closure_risk", label: "Bandhs, curfews & local shutdowns" },
+          { key: "shift_exposure", label: "Your work hours / shift type" },
         ]
       : [];
     const maxExp = exposureInputs
@@ -828,9 +930,9 @@ function App() {
             <div className="card">
               {exposureInputs && (
                 <>
-                  <h3 style={{ marginBottom: "8px", fontSize: "1.05rem" }}>This quote: exposure inputs</h3>
+                  <h3 style={{ marginBottom: "8px", fontSize: "1.05rem" }}>What we&apos;re seeing right now</h3>
                   <p style={{ color: "var(--text-dim)", fontSize: "0.82rem", lineHeight: 1.55, marginBottom: "18px" }}>
-                    Values fed into your premium for <strong>{exposureInputs.city}</strong> (0–100% scale). From live or mocked weather, AQI, news closure signal, and your shift pattern — not the training chart below.
+                    These bars show how risky things look <strong>today</strong> for <strong>{exposureInputs.city}</strong> — weather, air, local news about shutdowns, and how you work. Higher bars mean more of that risk is in play for this quote (each bar is out of 100%).
                   </p>
                   <div className="feature-importance-list" style={{ marginBottom: "28px" }}>
                     {exposureRows.map(({ key, label }) => {
@@ -849,16 +951,18 @@ function App() {
                 </>
               )}
 
-              <h3 style={{ marginBottom: "8px", fontSize: "1.05rem" }}>GBM sensitivity (training)</h3>
-              <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem", lineHeight: 1.6, marginBottom: "14px" }}>{riskQuote.explanation}</p>
+              <h3 style={{ marginBottom: "8px", fontSize: "1.05rem" }}>How the system was trained to think</h3>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem", lineHeight: 1.6, marginBottom: "12px" }}>
+                Your weekly price is mostly a <strong>straightforward formula</strong> (coverage × risk level, with city built in). A smaller slice uses <strong>pattern learning</strong> from sample scenarios—not a black box, but not the same as &quot;today&apos;s sky.&quot;
+              </p>
               <p style={{ color: "var(--text-muted)", fontSize: "0.76rem", lineHeight: 1.5, marginBottom: "16px" }}>
-                Bars show <strong>global feature importances</strong> from the GBM on training scenarios — not current rainfall in your zone.
+                The bars below show which factors the model relied on most when it learned. Compare them to <strong>today&apos;s bars above</strong> to see the difference.
               </p>
 
               <div className="feature-importance-list">
                 {Object.entries(importances).map(([name, value]) => (
                   <div className="fi-row" key={name}>
-                    <div className="fi-label">{name.replace(/_/g, " ")}</div>
+                    <div className="fi-label">{importanceFriendly[name] ?? name.replace(/_/g, " ")}</div>
                     <div className="fi-bar-container">
                       <div className="fi-bar" style={{ width: `${(Number(value) / maxImp) * 100}%` }} />
                     </div>
@@ -869,8 +973,8 @@ function App() {
 
               <div className="alert" style={{ background: "var(--accent-light)", borderColor: "hsl(22, 80%, 82%)", marginTop: "24px" }}>
                 <div className="alert-icon">⚡</div>
-                <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-                  <strong style={{ color: "var(--accent-hover)" }}>Zero-touch payouts:</strong> When a covered disruption is detected in {profile?.zone_name}, claims can be generated automatically and paid to your UPI.
+                <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: 1.55 }}>
+                  <strong style={{ color: "var(--accent-hover)" }}>Fast claims:</strong> If something covered happens in <strong>{profile?.zone_name}</strong>, we can start a claim for you and send the payout to your UPI—without long paperwork when things check out.
                 </div>
               </div>
             </div>
