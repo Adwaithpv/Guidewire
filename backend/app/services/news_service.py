@@ -1,9 +1,8 @@
 """
 News-based closure *pricing* signal (bandhs, curfews, hartals, strikes).
 
-Does not authorize payouts by itself — claims still require a verified parametric
-event for the worker's zone (e.g. /events/ingest/closure). Uses GNews when
-GNEWS_API_KEY is set; otherwise a stable low baseline.
+Tries NewsData.io first, then GNews, then a stable mock baseline.
+Does not authorize payouts — claims still require verified zone events.
 """
 from __future__ import annotations
 
@@ -17,7 +16,10 @@ import httpx
 
 log = logging.getLogger(__name__)
 
+NEWSDATA_KEY = (os.getenv("NEWSDATA_API_KEY") or "").strip()
 GNEWS_KEY = (os.getenv("GNEWS_API_KEY") or "").strip()
+
+NEWSDATA_LATEST = "https://newsdata.io/api/1/latest"
 GNEWS_SEARCH = "https://gnews.io/api/v4/search"
 
 # Match article text to worker geography (city + common aliases + state for regional bandhs)
@@ -58,6 +60,8 @@ _DISRUPTION_TERMS = (
     "transport strike",
 )
 
+_SEARCH_Q = "bandh OR curfew OR hartal OR strike OR shutdown OR section 144"
+
 
 def _geo_tokens_for_city(city: str) -> list[str]:
     tokens = _CITY_GEO_TOKENS.get(
@@ -87,39 +91,61 @@ def _mock_closure(city: str) -> dict[str, Any]:
     }
 
 
-async def get_closure_signal_from_news(city: str) -> dict[str, Any]:
-    """
-    Return closure_risk in [0,1] and evidence from recent India news for this city/region.
-    """
-    if not GNEWS_KEY:
-        log.info("No GNEWS_API_KEY — using mock closure signal for %s", city)
-        return _mock_closure(city)
+def _closure_risk_from_match_count(n: int) -> float:
+    if n == 0:
+        return 0.05
+    if n == 1:
+        return 0.10
+    if n == 2:
+        return 0.14
+    if n <= 4:
+        return 0.18
+    return 0.22
 
-    geo = _geo_tokens_for_city(city)
-    # Broad India search; we require city/state + disruption terms in the headline/body locally.
-    q = 'bandh OR hartal OR curfew OR "section 144" OR shutdown OR strike'
-    params = {
-        "q": q,
-        "lang": "en",
-        "country": "in",
-        "max": 20,
-        "from": (datetime.now(timezone.utc) - timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "apikey": GNEWS_KEY,
-        "sortby": "publishedAt",
+
+def _build_provider_result(
+    source: str,
+    matched: list[dict[str, Any]],
+    query_used: str,
+) -> dict[str, Any]:
+    n = len(matched)
+    return {
+        "source": source,
+        "closure_risk": round(_closure_risk_from_match_count(n), 3),
+        "articles_matched": n,
+        "headlines": matched[:5],
+        "query_used": query_used,
     }
 
-    try:
-        async with httpx.AsyncClient(timeout=12) as client:
-            resp = await client.get(GNEWS_SEARCH, params=params)
-            resp.raise_for_status()
-            data = resp.json()
-    except Exception as exc:
-        log.warning("GNews API error for %s: %s — mock closure", city, exc)
-        return _mock_closure(city)
 
-    articles = data.get("articles") or []
+def _filter_newsdata_results(raw: list[Any], geo: list[str]) -> list[dict[str, Any]]:
     matched: list[dict[str, Any]] = []
-    for a in articles:
+    for a in raw:
+        if not isinstance(a, dict):
+            continue
+        title = (a.get("title") or "").strip()
+        desc = (a.get("description") or "").strip()
+        snippet = (a.get("content") or "")[:500] if a.get("content") else ""
+        combined = f"{title} {desc} {snippet}"
+        if not _text_has_disruption(combined):
+            continue
+        if not _text_matches_geo(combined, geo):
+            continue
+        matched.append(
+            {
+                "title": title[:200],
+                "url": a.get("link"),
+                "published_at": a.get("pubDate"),
+            }
+        )
+    return matched
+
+
+def _filter_gnews_articles(raw: list[Any], geo: list[str]) -> list[dict[str, Any]]:
+    matched: list[dict[str, Any]] = []
+    for a in raw:
+        if not isinstance(a, dict):
+            continue
         title = (a.get("title") or "").strip()
         desc = (a.get("description") or "").strip()
         combined = f"{title} {desc}"
@@ -134,24 +160,107 @@ async def get_closure_signal_from_news(city: str) -> dict[str, Any]:
                 "published_at": a.get("publishedAt"),
             }
         )
+    return matched
 
-    n = len(matched)
-    # Pricing-only signal: cap below weather/AQI so headlines do not dominate premiums
-    if n == 0:
-        closure_risk = 0.05
-    elif n == 1:
-        closure_risk = 0.10
-    elif n == 2:
-        closure_risk = 0.14
-    elif n <= 4:
-        closure_risk = 0.18
-    else:
-        closure_risk = 0.22
 
-    return {
-        "source": "gnews",
-        "closure_risk": round(closure_risk, 3),
-        "articles_matched": n,
-        "headlines": matched[:5],
-        "query_used": f"{q} (filtered for {city})",
+async def _try_newsdata(city: str, geo: list[str]) -> dict[str, Any] | None:
+    if not NEWSDATA_KEY:
+        return None
+    params: dict[str, str | int] = {
+        "apikey": NEWSDATA_KEY,
+        "q": _SEARCH_Q,
+        "country": "in",
+        "language": "en",
+        "size": 10,
     }
+    try:
+        async with httpx.AsyncClient(timeout=12) as client:
+            resp = await client.get(NEWSDATA_LATEST, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+    except httpx.HTTPStatusError as exc:
+        log.info(
+            "NewsData.io HTTP %s for %s — trying GNews or mock next",
+            exc.response.status_code,
+            city,
+        )
+        return None
+    except Exception as exc:
+        log.info("NewsData.io request failed for %s (%s) — trying GNews or mock", city, exc)
+        return None
+
+    if data.get("status") != "success":
+        log.info(
+            "NewsData.io non-success for %s (%s) — trying GNews or mock",
+            city,
+            data.get("message") or data.get("status"),
+        )
+        return None
+
+    raw_results = data.get("results") or []
+    matched = _filter_newsdata_results(raw_results, geo)
+    return _build_provider_result(
+        "newsdata",
+        matched,
+        f"{_SEARCH_Q} (filtered for {city}, country=in)",
+    )
+
+
+async def _try_gnews(city: str, geo: list[str]) -> dict[str, Any] | None:
+    if not GNEWS_KEY:
+        return None
+    params = {
+        "q": _SEARCH_Q,
+        "lang": "en",
+        "country": "in",
+        "max": 20,
+        "from": (datetime.now(timezone.utc) - timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "apikey": GNEWS_KEY,
+        "sortby": "publishedAt",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=12) as client:
+            resp = await client.get(GNEWS_SEARCH, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+    except httpx.HTTPStatusError as exc:
+        code = exc.response.status_code
+        if code in (401, 403):
+            log.info("GNews %s for %s — mock closure fallback", code, city)
+        else:
+            log.warning("GNews HTTP %s for %s — mock closure", code, city)
+        return None
+    except Exception as exc:
+        log.warning("GNews request failed for %s: %s — mock closure", city, exc)
+        return None
+
+    articles = data.get("articles") or []
+    matched = _filter_gnews_articles(articles, geo)
+    return _build_provider_result(
+        "gnews",
+        matched,
+        f"{_SEARCH_Q} (filtered for {city}, GNews)",
+    )
+
+
+async def get_closure_signal_from_news(city: str) -> dict[str, Any]:
+    """
+    Return closure_risk in [0,1] and evidence from recent India news for this city/region.
+    Order: NewsData.io → GNews → mock.
+    """
+    geo = _geo_tokens_for_city(city)
+
+    if not NEWSDATA_KEY and not GNEWS_KEY:
+        log.info("No NEWSDATA_API_KEY or GNEWS_API_KEY — mock closure for %s", city)
+        return _mock_closure(city)
+
+    out = await _try_newsdata(city, geo)
+    if out is not None:
+        return out
+
+    out = await _try_gnews(city, geo)
+    if out is not None:
+        log.info("Using GNews closure signal for %s (NewsData unavailable or failed)", city)
+        return out
+
+    return _mock_closure(city)

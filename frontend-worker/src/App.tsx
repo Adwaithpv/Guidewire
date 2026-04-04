@@ -598,14 +598,20 @@ function App() {
                 <span
                   style={{ fontSize: "0.88rem", color: "var(--text-muted)" }}
                   title={
+                    quoteLiveFactors.closure_source === "newsdata" ||
                     quoteLiveFactors.closure_source === "gnews"
-                      ? "From GNews: India stories mentioning bandh, curfew, hartal, etc., matched to your city/region"
-                      : "Set GNEWS_API_KEY for real headlines; otherwise a low demo baseline"
+                      ? "Live news (NewsData.io or GNews): India stories mentioning bandh, curfew, hartal, etc., matched to your city/region"
+                      : "Set NEWSDATA_API_KEY and/or GNEWS_API_KEY for real headlines; otherwise a low demo baseline"
                   }
                 >
                   🚧 Closure {(typeof quoteLiveFactors.closure_risk === "number" ? (quoteLiveFactors.closure_risk * 100).toFixed(0) : "—")}%
                   <span style={{ color: "var(--text-dim)", marginLeft: "6px", fontSize: "0.8rem" }}>
-                    ({quoteLiveFactors.closure_source === "gnews" ? "news" : "mock"})
+                    (
+                      {quoteLiveFactors.closure_source === "newsdata" ||
+                      quoteLiveFactors.closure_source === "gnews"
+                        ? "news"
+                        : "mock"}
+                    )
                   </span>
                 </span>
               </div>

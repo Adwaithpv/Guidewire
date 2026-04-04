@@ -123,7 +123,7 @@ class LiveRiskFactors(BaseModel):
     flood_risk: float = 0.0
     aqi_risk: float = 0.0
     closure_risk: float = 0.0
-    """From GNews (bandh/curfew/hartal/etc.) when configured; else mock baseline."""
+    """From NewsData.io or GNews (bandh/curfew/hartal/etc.) when configured; else mock."""
     closure_source: str = "mock"
     closure_headlines: list[dict[str, Any]] = Field(default_factory=list)
     overall_risk: str = "low"
