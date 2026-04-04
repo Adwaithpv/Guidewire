@@ -42,6 +42,8 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [triggerLoading, setTriggerLoading] = useState<string | null>(null);
   const [simulatorLastResult, setSimulatorLastResult] = useState<any>(null);
+  /** 0–4 = step in progress / highlighting; 5 = all steps complete (mock claim pipeline animation). */
+  const [simPipelineStep, setSimPipelineStep] = useState<number | null>(null);
   const [shiftRec, setShiftRec] = useState<any>(null);
   const [shiftRecLoading, setShiftRecLoading] = useState(false);
 
@@ -98,6 +100,13 @@ function App() {
     }
     return () => clearInterval(interval);
   }, [view, workerId, fetchDashboardData, fetchLiveRisk]);
+
+  useEffect(() => {
+    if (simPipelineStep === null) return;
+    if (simPipelineStep >= 5) return;
+    const t = window.setTimeout(() => setSimPipelineStep(s => (s === null ? null : s + 1)), 780);
+    return () => window.clearTimeout(t);
+  }, [simPipelineStep]);
 
   // ── OTP Handlers ──
   const handleSendOtp = async () => {
@@ -205,6 +214,7 @@ function App() {
     }
     setTriggerLoading(type);
     setSimulatorLastResult(null);
+    setSimPipelineStep(null);
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 3600000);
     const twoHoursAgo = new Date(now.getTime() - 7200000);
@@ -220,6 +230,7 @@ function App() {
             severity: "severe",
             source_name: "Mock Weather Sensor",
             source_payload: { rainfall_mm: 62.5, wind_kmh: 45 },
+            worker_id: workerId ?? undefined,
           });
           break;
         case "flood":
@@ -231,6 +242,7 @@ function App() {
             severity: "severe",
             source_name: "Mock Flood Sensor",
             source_payload: { water_level_cm: 35 },
+            worker_id: workerId ?? undefined,
           });
           break;
         case "aqi":
@@ -242,6 +254,7 @@ function App() {
             severity: "severe",
             source_name: "Mock AQI Monitor",
             source_payload: { aqi: 380, dominant_pollutant: "pm25" },
+            worker_id: workerId ?? undefined,
           });
           break;
         case "closure":
@@ -252,6 +265,7 @@ function App() {
             ended_at: now.toISOString(),
             severity: "high",
             source_name: "Mock Authority Alert",
+            worker_id: workerId ?? undefined,
           });
           break;
         case "outage":
@@ -263,15 +277,20 @@ function App() {
             severity: "moderate",
             source_name: "Mock Platform Monitor",
             source_payload: { platform: profile.platform_name, downtime_min: 45 },
+            worker_id: workerId ?? undefined,
           });
           break;
         default:
           return;
       }
       setSimulatorLastResult(res);
+      if (!res.deduplicated) {
+        setSimPipelineStep(workerId != null ? 0 : null);
+      }
       await fetchDashboardData();
     } catch (err) {
       console.error(err);
+      setSimPipelineStep(null);
       setSimulatorLastResult({
         error: true,
         message: err instanceof Error ? err.message : "Simulator request failed",
@@ -616,41 +635,69 @@ function App() {
               <span className="live-badge">
                 <span className="pulse-dot" /> LIVE INPUTS
               </span>
-              <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                🌡️ {quoteLiveFactors.weather?.temperature_c ?? "—"}°C · {quoteLiveFactors.weather?.condition ?? "—"}
-                <span style={{ color: "var(--text-muted)", marginLeft: "6px" }}>
-                  ({quoteLiveFactors.weather?.source === "openweathermap" ? "OpenWeatherMap" : quoteLiveFactors.weather?.source || "—"})
-                </span>
-              </span>
-              <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                🌧️ {quoteLiveFactors.weather?.rain_mm_1h ?? 0} mm/h · 💨 {quoteLiveFactors.weather?.wind_speed_kmh ?? 0} km/h
-              </span>
-              <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                😷 AQI {quoteLiveFactors.aqi?.aqi ?? "—"}
-                <span style={{ color: "var(--text-muted)", marginLeft: "6px" }}>
-                  ({quoteLiveFactors.aqi?.source === "waqi" ? "WAQI" : quoteLiveFactors.aqi?.source || "mock"})
-                </span>
-              </span>
-              <span
-                style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}
-                title={
-                  quoteLiveFactors.closure_source === "newsdata" || quoteLiveFactors.closure_source === "gnews"
-                    ? "Live news (NewsData.io or GNews): India stories mentioning bandh, curfew, hartal, etc., matched to your city/region"
-                    : "Set NEWSDATA_API_KEY and/or GNEWS_API_KEY for real headlines; otherwise a low demo baseline"
-                }
-              >
-                🚧 Closure {(typeof quoteLiveFactors.closure_risk === "number" ? (quoteLiveFactors.closure_risk * 100).toFixed(0) : "—")}%
-                <span style={{ color: "var(--text-muted)", marginLeft: "6px", fontSize: "0.75rem" }}>
-                  (
-                  {quoteLiveFactors.closure_source === "newsdata" || quoteLiveFactors.closure_source === "gnews"
-                    ? "news"
-                    : "mock"}
-                  )
-                </span>
-              </span>
+              <div className="quote-live-strip__metrics">
+                <div className="quote-metric">
+                  <span className="quote-metric__icon" aria-hidden>
+                    🌡️
+                  </span>
+                  <div className="quote-metric__body">
+                    <span className="quote-metric__main">
+                      {quoteLiveFactors.weather?.temperature_c ?? "—"}°C · {quoteLiveFactors.weather?.condition ?? "—"}
+                    </span>
+                    <span className="quote-metric__sub">
+                      {quoteLiveFactors.weather?.source === "openweathermap" ? "OpenWeatherMap" : quoteLiveFactors.weather?.source || "—"}
+                    </span>
+                  </div>
+                </div>
+                <div className="quote-metric">
+                  <span className="quote-metric__icon" aria-hidden>
+                    🌧️
+                  </span>
+                  <div className="quote-metric__body">
+                    <span className="quote-metric__main">
+                      {quoteLiveFactors.weather?.rain_mm_1h ?? 0} mm/h rain · {quoteLiveFactors.weather?.wind_speed_kmh ?? 0} km/h wind
+                    </span>
+                    <span className="quote-metric__sub">Live weather strip</span>
+                  </div>
+                </div>
+                <div className="quote-metric">
+                  <span className="quote-metric__icon" aria-hidden>
+                    😷
+                  </span>
+                  <div className="quote-metric__body">
+                    <span className="quote-metric__main">AQI {quoteLiveFactors.aqi?.aqi ?? "—"}</span>
+                    <span className="quote-metric__sub">
+                      {quoteLiveFactors.aqi?.source === "waqi" ? "WAQI" : quoteLiveFactors.aqi?.source || "mock"}
+                    </span>
+                  </div>
+                </div>
+                <div
+                  className="quote-metric"
+                  title={
+                    quoteLiveFactors.closure_source === "newsdata" || quoteLiveFactors.closure_source === "gnews"
+                      ? "Live news (NewsData.io or GNews): India stories mentioning bandh, curfew, hartal, etc., matched to your city/region"
+                      : "Set NEWSDATA_API_KEY and/or GNEWS_API_KEY for real headlines; otherwise a low demo baseline"
+                  }
+                >
+                  <span className="quote-metric__icon" aria-hidden>
+                    🚧
+                  </span>
+                  <div className="quote-metric__body">
+                    <span className="quote-metric__main">
+                      Closure signal{" "}
+                      {typeof quoteLiveFactors.closure_risk === "number" ? `${(quoteLiveFactors.closure_risk * 100).toFixed(0)}%` : "—"}
+                    </span>
+                    <span className="quote-metric__sub">
+                      {quoteLiveFactors.closure_source === "newsdata" || quoteLiveFactors.closure_source === "gnews"
+                        ? "News-driven"
+                        : "Mock baseline"}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           ) : null}
-          <button type="button" className="btn-ghost" onClick={handleRefreshQuote} disabled={loading} style={{ marginLeft: "auto", padding: "10px 16px", fontSize: "0.88rem" }}>
+          <button type="button" className="btn-ghost" onClick={handleRefreshQuote} disabled={loading} style={{ padding: "10px 16px", fontSize: "0.88rem" }}>
             {loading ? "Refreshing…" : "↻ Refresh live quote"}
           </button>
         </div>
@@ -1222,40 +1269,139 @@ function App() {
               </div>
             </div>
 
-            {simulatorLastResult && (
+            {simulatorLastResult?.error && (
               <div
                 className="alert"
                 style={{
                   marginTop: "14px",
-                  background: simulatorLastResult.error
-                    ? "var(--error-bg)"
-                    : simulatorLastResult.deduplicated
-                      ? "var(--warning-bg)"
-                      : "var(--success-bg)",
-                  borderColor: simulatorLastResult.error
-                    ? "hsl(4, 55%, 78%)"
-                    : simulatorLastResult.deduplicated
-                      ? "hsl(38, 70%, 72%)"
-                      : "var(--success-border)",
+                  background: "var(--error-bg)",
+                  borderColor: "hsl(4, 55%, 78%)",
                 }}
               >
-                <div className="alert-icon">{simulatorLastResult.error ? "⚠️" : simulatorLastResult.deduplicated ? "⏳" : "✓"}</div>
+                <div className="alert-icon">⚠️</div>
+                <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", lineHeight: 1.5 }}>{simulatorLastResult.message}</div>
+              </div>
+            )}
+
+            {simulatorLastResult && !simulatorLastResult.error && simulatorLastResult.deduplicated && (
+              <div
+                className="alert"
+                style={{
+                  marginTop: "14px",
+                  background: "var(--warning-bg)",
+                  borderColor: "hsl(38, 70%, 72%)",
+                }}
+              >
+                <div className="alert-icon">⏳</div>
                 <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
-                  {simulatorLastResult.error ? (
-                    <span>{simulatorLastResult.message}</span>
-                  ) : simulatorLastResult.deduplicated ? (
-                    <span>{simulatorLastResult.reason || "Duplicate event skipped (cooldown still applies to non-mock ingests)."}</span>
-                  ) : (
-                    <span>
-                      Event #{simulatorLastResult.event_id}: <strong>{simulatorLastResult.claim_candidates}</strong> claim(s) created.
-                      {simulatorLastResult.claim_candidates === 0 && (
-                        <> Check policy coverage window, zone match, or weekly payout cap.</>
-                      )}
-                    </span>
-                  )}
+                  {simulatorLastResult.reason || "Duplicate event skipped (cooldown still applies to non-mock ingests)."}
                 </div>
               </div>
             )}
+
+            {simulatorLastResult &&
+              !simulatorLastResult.error &&
+              !simulatorLastResult.deduplicated &&
+              simPipelineStep !== null &&
+              (() => {
+                const res = simulatorLastResult;
+                const claimRows = Array.isArray(res.claims) ? res.claims : [];
+                const n = typeof res.claim_candidates === "number" ? res.claim_candidates : claimRows.length;
+                const total = claimRows.reduce((a: number, c: { approved_payout?: number }) => a + Number(c.approved_payout ?? 0), 0);
+                const steps: { title: string; detail: string; warn?: boolean }[] = [
+                  {
+                    title: "Disruption detected",
+                    detail: `Verified signal ingested for your zone (${profile?.zone_name}).`,
+                  },
+                  {
+                    title: "Policy match",
+                    detail: "Checked active weekly policy, coverage dates, and parametric triggers for this event type.",
+                  },
+                  {
+                    title: "Fraud & risk review",
+                    detail: "Automated scoring: GPS consistency, activity pattern, duplicates, and source quality.",
+                  },
+                  n > 0
+                    ? {
+                        title: "Claim approved",
+                        detail: `${n} claim${n === 1 ? "" : "s"} on your policy · ₹${total.toFixed(0)} estimated payout.`,
+                      }
+                    : {
+                        title: "No claim created",
+                        detail: "Policy window, weekly payout cap, or trigger thresholds may not be satisfied for this run.",
+                        warn: true,
+                      },
+                  n > 0
+                    ? {
+                        title: "Payout initiated",
+                        detail: `UPI credit to ${profile?.payout_upi || "your registered UPI"} (demo — instant settlement).`,
+                      }
+                    : {
+                        title: "No payout",
+                        detail: "Nothing sent until a claim is approved.",
+                        warn: true,
+                      },
+                ];
+                return (
+                  <div className="sim-pipeline" aria-live="polite">
+                    <div className="sim-pipeline-header">Automatic claim flow</div>
+                    <p className="sim-pipeline-sub">
+                      Event #{res.event_id} · {profile?.zone_name}
+                    </p>
+                    <ol className="sim-pipeline-steps">
+                      {steps.map((step, i) => {
+                        const done = simPipelineStep !== null && i < simPipelineStep;
+                        const active = simPipelineStep !== null && i === simPipelineStep && simPipelineStep < 5;
+                        const pending = simPipelineStep !== null && i > simPipelineStep;
+                        const warn = Boolean(step.warn);
+                        return (
+                          <li
+                            key={step.title}
+                            className={`sim-step ${done ? "done" : ""} ${active ? "active" : ""} ${pending ? "pending" : ""} ${warn && done ? "warn" : ""}`}
+                          >
+                            <span className="sim-step-marker" aria-hidden>
+                              {done ? "✓" : active ? <span className="sim-step-pulse" /> : "○"}
+                            </span>
+                            <div className="sim-step-body">
+                              <div className="sim-step-title">{step.title}</div>
+                              <div className="sim-step-detail">{step.detail}</div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                    {simPipelineStep >= 5 && (
+                      <div className={`sim-pipeline-done ${n === 0 ? "muted" : ""}`}>
+                        {n > 0
+                          ? "Pipeline complete — see Claims history for the new entry."
+                          : "Run complete — adjust coverage or try another trigger."}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+            {simulatorLastResult &&
+              !simulatorLastResult.error &&
+              !simulatorLastResult.deduplicated &&
+              simPipelineStep === null && (
+                <div
+                  className="alert"
+                  style={{
+                    marginTop: "14px",
+                    background: "var(--success-bg)",
+                    borderColor: "var(--success-border)",
+                  }}
+                >
+                  <div className="alert-icon">✓</div>
+                  <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
+                    Event #{simulatorLastResult.event_id}: <strong>{simulatorLastResult.claim_candidates}</strong> claim(s) created.
+                    {(simulatorLastResult.claim_candidates ?? 0) === 0 && (
+                      <> Check policy coverage window, zone match, or weekly payout cap.</>
+                    )}
+                  </div>
+                </div>
+              )}
           </div>
         </section>
 

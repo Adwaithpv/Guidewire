@@ -214,8 +214,8 @@ h6 {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px 20px;
-  padding: 14px 18px;
+  gap: 14px 20px;
+  padding: 16px 20px;
   margin-bottom: 24px;
   background: var(--bg-alt);
   border: 1px solid var(--border);
@@ -232,14 +232,58 @@ h6 {
   color: var(--navy);
 }
 .quote-live-strip {
-  flex: 1;
-  min-width: 200px;
+  flex: 1 1 320px;
+  min-width: 0;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 16px;
-  font-size: 0.8rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+/* Dashboard uses margin-left:auto on .live-badge; quote bar needs a flush left stack */
+.quote-live-strip .live-badge {
+  margin-left: 0;
+  align-self: flex-start;
+}
+.quote-live-strip__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px 24px;
+  align-items: start;
+  width: 100%;
+}
+.quote-metric {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.8125rem;
+  line-height: 1.45;
   color: var(--text-secondary);
+}
+.quote-metric__icon {
+  flex-shrink: 0;
+  width: 1.35em;
+  text-align: center;
+  font-size: 1.05em;
+  line-height: 1.35;
+}
+.quote-metric__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.quote-metric__main {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.quote-metric__sub {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.quote-top-bar .btn-ghost {
+  flex-shrink: 0;
+  margin-left: auto;
 }
 .quote-main-grid {
   display: grid;
@@ -1217,6 +1261,122 @@ button:disabled {
   background: hsla(210, 20%, 97%, 0.75);
   border-radius: inherit;
   animation: pulseGlow 0.65s ease-in-out;
+}
+
+/* ── Simulator claim pipeline (animated steps) ─── */
+.sim-pipeline {
+  margin-top: 16px;
+  padding: 18px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+.sim-pipeline-header {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: var(--navy);
+  letter-spacing: -0.02em;
+}
+.sim-pipeline-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 4px 0 14px;
+}
+.sim-pipeline-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.sim-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  transition: opacity var(--transition-smooth), background var(--transition-smooth);
+}
+.sim-step:last-child {
+  border-bottom: none;
+}
+.sim-step.pending {
+  opacity: 0.45;
+}
+.sim-step.active {
+  opacity: 1;
+  background: var(--accent-light);
+  margin: 0 -12px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border-bottom: none;
+}
+.sim-step.done {
+  opacity: 1;
+}
+.sim-step.warn.done .sim-step-title {
+  color: var(--warning);
+}
+.sim-step-marker {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+.sim-step.done .sim-step-marker {
+  color: var(--success);
+}
+.sim-step.active .sim-step-marker {
+  color: var(--accent);
+}
+.sim-step-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: simPulse 0.9s ease-in-out infinite;
+}
+.sim-step-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 2px;
+}
+.sim-step-detail {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.sim-pipeline-done {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--success);
+}
+.sim-pipeline-done.muted {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+@keyframes simPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.65;
+  }
 }
 
 /* ── Alerts ─────────────────────────── */

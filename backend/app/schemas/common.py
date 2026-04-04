@@ -107,6 +107,8 @@ class EventIngestRequest(BaseModel):
     severity: str = "moderate"
     source_name: str = "mock"
     source_payload: dict[str, Any] | None = None
+    """When set, dashboard Mock simulator only creates claims for this worker (avoids one event → all workers in zone)."""
+    worker_id: int | None = None
 
 
 class ProcessClaimResponse(BaseModel):

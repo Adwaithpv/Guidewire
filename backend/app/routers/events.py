@@ -30,6 +30,7 @@ def _ingest(payload: EventIngestRequest, db: Session) -> dict:
                 "claim_candidates": 0,
                 "deduplicated": True,
                 "reason": "Same zone and event type within cooldown window",
+                "claims": [],
             }
 
     started_at = to_utc_naive(payload.started_at)
@@ -53,8 +54,23 @@ def _ingest(payload: EventIngestRequest, db: Session) -> dict:
     db.add(event)
     db.commit()
     db.refresh(event)
-    created_claims = create_claim_candidates(db, event)
-    return {"event_id": event.id, "claim_candidates": len(created_claims)}
+    restrict_worker: int | None = None
+    if is_demo_simulator and payload.worker_id is not None:
+        restrict_worker = payload.worker_id
+    created_claims = create_claim_candidates(db, event, restrict_worker_id=restrict_worker)
+    claims_out = [
+        {
+            "id": c.id,
+            "status": c.status,
+            "approved_payout": float(c.approved_payout),
+        }
+        for c in created_claims
+    ]
+    return {
+        "event_id": event.id,
+        "claim_candidates": len(created_claims),
+        "claims": claims_out,
+    }
 
 
 @router.post("/ingest/weather")

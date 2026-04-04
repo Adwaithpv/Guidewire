@@ -32,8 +32,14 @@ def find_impacted_policies(db: Session, zone_id: int, started_at: datetime, ende
     return list(db.execute(stmt).all())
 
 
-def create_claim_candidates(db: Session, event: DisruptionEvent) -> list[Claim]:
+def create_claim_candidates(
+    db: Session,
+    event: DisruptionEvent,
+    restrict_worker_id: int | None = None,
+) -> list[Claim]:
     impacted = find_impacted_policies(db, event.zone_id, event.started_at, event.ended_at)
+    if restrict_worker_id is not None:
+        impacted = [(w, p) for w, p in impacted if w.id == restrict_worker_id]
     claims: list[Claim] = []
     for worker, policy in impacted:
         trig = policy_trigger_for_event(db, policy.id, event.event_type)
