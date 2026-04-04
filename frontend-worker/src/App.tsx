@@ -315,68 +315,111 @@ function App() {
   // ═══════════════════════════════════════════════════════════════
   if (view === "otp") {
     return (
-      <div className="app-container center-view">
-        <div className="card wizard-card">
-          <div className="wizard-progress">
-            <div className="progress-step active">1</div>
-            <div className="progress-line" />
-            <div className="progress-step">2</div>
-            <div className="progress-line" />
-            <div className="progress-step">3</div>
-            <div className="progress-line" />
-            <div className="progress-step">4</div>
-          </div>
-          <div className="wizard-header">
-            <div className="hero-shield">🛡️</div>
-            <h2>SurakshaShift AI</h2>
-            <p className="subtitle">AI-Powered Income Protection for Gig Workers</p>
-          </div>
-          <div className="wizard-body">
-            <div className="form-group">
-              <label>Mobile Number</label>
-              <div className="phone-input-group">
-                <span className="phone-prefix">+91</span>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  placeholder="Enter your 10-digit number"
-                  maxLength={10}
+      <>
+        <div className="app-container auth-split">
+          <aside className="auth-panel-left">
+            <div className="auth-brand-row">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                <path
+                  d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"
+                  fill="hsl(22, 95%, 55%)"
+                  stroke="hsl(22, 95%, 48%)"
+                  strokeWidth="1.2"
                 />
-              </div>
+              </svg>
+              <span className="auth-brand-wordmark">SurakshaShift</span>
             </div>
-            {!otpSent ? (
-              <button onClick={handleSendOtp} disabled={loading || phone.length < 10} style={{ width: "100%" }}>
-                {loading ? "Sending..." : "Send OTP →"}
-              </button>
-            ) : (
-              <>
-                <div className="otp-sent-label">
-                  <span className="pulse-dot" />
-                  OTP sent to +91 {phone} <span style={{ color: "var(--text-dim)", fontSize: "0.8rem" }}>(use 123456)</span>
+            <p className="auth-tagline">Income protection for India&apos;s delivery workforce</p>
+            <ul className="auth-trust-list">
+              <li>
+                <span className="auth-trust-icon">✓</span>
+                <span>Parametric coverage aligned with real-world disruptions — rain, flood, air quality, and more.</span>
+              </li>
+              <li>
+                <span className="auth-trust-icon">✓</span>
+                <span>Weekly plans designed for gig schedules — simple pricing, no jargon.</span>
+              </li>
+              <li>
+                <span className="auth-trust-icon">✓</span>
+                <span>Claims guided by live zone data — built for trust and transparency.</span>
+              </li>
+            </ul>
+          </aside>
+          <div className="auth-panel-right center-view">
+            <div className="card wizard-card">
+              <div className="wizard-progress">
+                <div className="progress-step active">1</div>
+                <div className="progress-line" />
+                <div className="progress-step">2</div>
+                <div className="progress-line" />
+                <div className="progress-step">3</div>
+                <div className="progress-line" />
+                <div className="progress-step">4</div>
+              </div>
+              <div className="wizard-header">
+                <div className="hero-shield" aria-hidden>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"
+                      fill="hsl(22, 95%, 55%)"
+                      stroke="hsl(22, 95%, 48%)"
+                      strokeWidth="1.2"
+                    />
+                  </svg>
                 </div>
+                <h2>Sign in with mobile</h2>
+                <p className="subtitle">Verify your number to continue to your SurakshaShift profile</p>
+              </div>
+              <div className="wizard-body">
                 <div className="form-group">
-                  <label>Enter OTP</label>
-                  <input
-                    type="text"
-                    value={otp}
-                    onChange={e => setOtp(e.target.value)}
-                    placeholder="6-digit OTP"
-                    maxLength={6}
-                    className="otp-input"
-                  />
+                  <label>Mobile Number</label>
+                  <div className="phone-input-group">
+                    <span className="phone-prefix">+91</span>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={e => setPhone(e.target.value)}
+                      placeholder="Enter your 10-digit number"
+                      maxLength={10}
+                    />
+                  </div>
                 </div>
-                <button onClick={handleVerifyOtp} disabled={loading || otp.length < 6} style={{ width: "100%" }}>
-                  {loading ? "Verifying..." : "Verify & Continue →"}
-                </button>
-              </>
-            )}
-          </div>
-          <div className="wizard-footer">
-            Covering 10L+ workers across India · Weekly Plans from ₹15
+                {!otpSent ? (
+                  <button onClick={handleSendOtp} disabled={loading || phone.length < 10} style={{ width: "100%" }}>
+                    {loading ? "Sending..." : "Send OTP →"}
+                  </button>
+                ) : (
+                  <>
+                    <div className="otp-sent-label">
+                      <span className="pulse-dot" />
+                      OTP sent to +91 {phone}{" "}
+                      <span style={{ color: "var(--text-dim)", fontSize: "0.8rem" }}>(use 123456)</span>
+                    </div>
+                    <div className="form-group">
+                      <label>Enter OTP</label>
+                      <input
+                        type="text"
+                        value={otp}
+                        onChange={e => setOtp(e.target.value)}
+                        placeholder="6-digit OTP"
+                        maxLength={6}
+                        className="otp-input"
+                      />
+                    </div>
+                    <button onClick={handleVerifyOtp} disabled={loading || otp.length < 6} style={{ width: "100%" }}>
+                      {loading ? "Verifying..." : "Verify & Continue →"}
+                    </button>
+                  </>
+                )}
+              </div>
+              <div className="wizard-footer">Covering 10L+ workers across India · Weekly plans from ₹15</div>
+            </div>
           </div>
         </div>
-      </div>
+        <footer className="auth-footer">
+          Trusted partners: [Insurance partner] · [Payments partner] · [Wellness partner]
+        </footer>
+      </>
     );
   }
 
@@ -387,14 +430,11 @@ function App() {
     return (
       <div className="app-container center-view">
         <div className="card wizard-card" style={{ maxWidth: "580px" }}>
-          <div className="wizard-progress">
-            <div className="progress-step done">✓</div>
-            <div className="progress-line filled" />
-            <div className="progress-step active">2</div>
-            <div className="progress-line" />
-            <div className="progress-step">3</div>
-            <div className="progress-line" />
-            <div className="progress-step">4</div>
+          <div className="reg-progress" role="navigation" aria-label="Onboarding steps">
+            <div className="reg-step done">Verify</div>
+            <div className="reg-step active">Profile</div>
+            <div className="reg-step">Coverage</div>
+            <div className="reg-step">Done</div>
           </div>
           <div className="wizard-header">
             <h2>Tell us about your work</h2>
@@ -468,7 +508,16 @@ function App() {
               <label htmlFor="gps-check" style={{ textTransform: "none", fontSize: "0.9rem" }}>Enable GPS validation for faster claim approvals</label>
             </div>
             <button type="submit" disabled={loading} style={{ width: "100%", marginTop: "8px" }}>
-              {loading ? "Analyzing Risk..." : "Get My AI Risk Premium ⚡"}
+              {loading ? (
+                "Analyzing risk…"
+              ) : (
+                <>
+                  Get my risk quote
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                    <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </>
+              )}
             </button>
           </form>
         </div>
@@ -529,6 +578,7 @@ function App() {
       planList.find((p: any) => p.plan_id === "standard") ||
       planList[0];
     const riskTone = (plansQuote?.risk_level || "moderate").toLowerCase();
+    const riskPillClass = ["low", "moderate", "high", "critical"].includes(riskTone) ? riskTone : "moderate";
     const riskColor =
       riskTone === "low"
         ? "var(--success)"
@@ -536,24 +586,21 @@ function App() {
           ? "var(--primary-hover)"
           : riskTone === "high"
             ? "var(--warning)"
-            : "hsl(350, 80%, 62%)";
+            : "var(--error)";
     return (
-      <div className="app-container center-view" style={{ padding: "40px" }}>
-        <div className="wizard-progress" style={{ marginBottom: "40px" }}>
-          <div className="progress-step done">✓</div>
-          <div className="progress-line filled" />
-          <div className="progress-step done">✓</div>
-          <div className="progress-line filled" />
-          <div className="progress-step active">3</div>
-          <div className="progress-line" />
-          <div className="progress-step">4</div>
+      <div className="app-container center-view quote-page">
+        <div className="reg-progress" style={{ maxWidth: "640px", width: "100%", margin: "0 auto 28px" }} role="navigation" aria-label="Onboarding steps">
+          <div className="reg-step done">Verify</div>
+          <div className="reg-step done">Profile</div>
+          <div className="reg-step active">Coverage</div>
+          <div className="reg-step">Done</div>
         </div>
 
-        <h2 style={{ fontSize: "2.2rem", marginBottom: "8px", textAlign: "center" }}>Your AI-Calculated Shield 🛡️</h2>
-        <p className="subtitle" style={{ marginBottom: "12px", textAlign: "center" }}>
-          Actuarial + ML blend • Live factors for your zone • {profile?.zone_name}, {profile?.city}
+        <h2 style={{ fontSize: "2rem", marginBottom: "8px", textAlign: "center" }}>Your personalised quote</h2>
+        <p className="subtitle" style={{ marginBottom: "10px", textAlign: "center", maxWidth: "36rem", marginLeft: "auto", marginRight: "auto" }}>
+          Actuarial + ML blend · Live factors for {profile?.zone_name}, {profile?.city}
         </p>
-        <p style={{ textAlign: "center", fontSize: "0.85rem", color: "var(--text-dim)", marginBottom: "24px" }}>
+        <p style={{ textAlign: "center", fontSize: "0.85rem", color: "var(--text-dim)", marginBottom: "22px", maxWidth: "40rem", marginLeft: "auto", marginRight: "auto", lineHeight: 1.55 }}>
           Premium uses <strong style={{ color: "var(--primary-hover)" }}>live</strong> weather, AQI, and{" "}
           <strong style={{ color: "var(--primary-hover)" }}>news</strong> (bandh / curfew signals) for {profile?.city}
           {quoteLiveFactors?.fetched_at && (
@@ -561,240 +608,220 @@ function App() {
           )}
         </p>
 
-        {quoteLiveFactors && (
-          <div
-            className="card"
-            style={{
-              maxWidth: "900px",
-              margin: "0 auto 28px",
-              padding: "16px 20px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-              background: "hsla(210, 25%, 12%, 0.85)",
-              borderColor: "var(--border)",
-            }}
-          >
-            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "20px", alignItems: "center" }}>
-                <span className="live-badge" style={{ marginRight: "4px" }}>
-                  <span className="pulse-dot" /> LIVE INPUTS
+        <div className="quote-top-bar" style={{ maxWidth: "1000px", margin: "0 auto 20px", width: "100%" }}>
+          <span className={`risk-pill ${riskPillClass}`}>{(plansQuote?.risk_level || "moderate").toUpperCase()}</span>
+          <span className="quote-city">{profile?.city}</span>
+          {quoteLiveFactors ? (
+            <div className="quote-live-strip">
+              <span className="live-badge">
+                <span className="pulse-dot" /> LIVE INPUTS
+              </span>
+              <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+                🌡️ {quoteLiveFactors.weather?.temperature_c ?? "—"}°C · {quoteLiveFactors.weather?.condition ?? "—"}
+                <span style={{ color: "var(--text-muted)", marginLeft: "6px" }}>
+                  ({quoteLiveFactors.weather?.source === "openweathermap" ? "OpenWeatherMap" : quoteLiveFactors.weather?.source || "—"})
                 </span>
-                <span style={{ fontSize: "0.88rem" }}>
-                  🌡️ {quoteLiveFactors.weather?.temperature_c ?? "—"}°C · {quoteLiveFactors.weather?.condition ?? "—"}
-                  <span style={{ color: "var(--text-dim)", marginLeft: "8px" }}>
-                    ({quoteLiveFactors.weather?.source === "openweathermap" ? "OpenWeatherMap" : quoteLiveFactors.weather?.source || "—"})
-                  </span>
+              </span>
+              <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+                🌧️ {quoteLiveFactors.weather?.rain_mm_1h ?? 0} mm/h · 💨 {quoteLiveFactors.weather?.wind_speed_kmh ?? 0} km/h
+              </span>
+              <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+                😷 AQI {quoteLiveFactors.aqi?.aqi ?? "—"}
+                <span style={{ color: "var(--text-muted)", marginLeft: "6px" }}>
+                  ({quoteLiveFactors.aqi?.source === "waqi" ? "WAQI" : quoteLiveFactors.aqi?.source || "mock"})
                 </span>
-                <span style={{ fontSize: "0.88rem" }}>
-                  🌧️ {quoteLiveFactors.weather?.rain_mm_1h ?? 0} mm/h · 💨 {quoteLiveFactors.weather?.wind_speed_kmh ?? 0} km/h
-                </span>
-                <span style={{ fontSize: "0.88rem" }}>
-                  😷 AQI {quoteLiveFactors.aqi?.aqi ?? "—"}
-                  <span style={{ color: "var(--text-dim)", marginLeft: "6px" }}>
-                    ({quoteLiveFactors.aqi?.source === "waqi" ? "WAQI" : quoteLiveFactors.aqi?.source || "mock"})
-                  </span>
-                </span>
-                <span
-                  style={{ fontSize: "0.88rem", color: "var(--text-muted)" }}
-                  title={
-                    quoteLiveFactors.closure_source === "newsdata" ||
-                    quoteLiveFactors.closure_source === "gnews"
-                      ? "Live news (NewsData.io or GNews): India stories mentioning bandh, curfew, hartal, etc., matched to your city/region"
-                      : "Set NEWSDATA_API_KEY and/or GNEWS_API_KEY for real headlines; otherwise a low demo baseline"
-                  }
-                >
-                  🚧 Closure {(typeof quoteLiveFactors.closure_risk === "number" ? (quoteLiveFactors.closure_risk * 100).toFixed(0) : "—")}%
-                  <span style={{ color: "var(--text-dim)", marginLeft: "6px", fontSize: "0.8rem" }}>
-                    (
-                      {quoteLiveFactors.closure_source === "newsdata" ||
-                      quoteLiveFactors.closure_source === "gnews"
-                        ? "news"
-                        : "mock"}
-                    )
-                  </span>
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={handleRefreshQuote}
-                disabled={loading}
-                style={{
-                  whiteSpace: "nowrap",
-                  padding: "8px 14px",
-                  borderRadius: "8px",
-                  border: "1px solid var(--border)",
-                  background: "hsla(210, 20%, 18%, 0.9)",
-                  color: "var(--text-main)",
-                  cursor: loading ? "wait" : "pointer",
-                }}
+              </span>
+              <span
+                style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}
+                title={
+                  quoteLiveFactors.closure_source === "newsdata" || quoteLiveFactors.closure_source === "gnews"
+                    ? "Live news (NewsData.io or GNews): India stories mentioning bandh, curfew, hartal, etc., matched to your city/region"
+                    : "Set NEWSDATA_API_KEY and/or GNEWS_API_KEY for real headlines; otherwise a low demo baseline"
+                }
               >
-                {loading ? "Refreshing…" : "↻ Refresh live quote"}
-              </button>
+                🚧 Closure {(typeof quoteLiveFactors.closure_risk === "number" ? (quoteLiveFactors.closure_risk * 100).toFixed(0) : "—")}%
+                <span style={{ color: "var(--text-muted)", marginLeft: "6px", fontSize: "0.75rem" }}>
+                  (
+                  {quoteLiveFactors.closure_source === "newsdata" || quoteLiveFactors.closure_source === "gnews"
+                    ? "news"
+                    : "mock"}
+                  )
+                </span>
+              </span>
             </div>
-            {Array.isArray(quoteLiveFactors.closure_headlines) && quoteLiveFactors.closure_headlines.length > 0 && (
-              <div style={{ fontSize: "0.78rem", color: "var(--text-dim)", lineHeight: 1.45 }}>
-                <strong style={{ color: "var(--text-muted)" }}>News matched:</strong>
-                <ul style={{ margin: "6px 0 0 18px", padding: 0 }}>
-                  {quoteLiveFactors.closure_headlines.slice(0, 3).map((h: { title?: string }, i: number) => (
-                    <li key={i}>{h.title || "(no title)"}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
+          ) : null}
+          <button type="button" className="btn-ghost" onClick={handleRefreshQuote} disabled={loading} style={{ marginLeft: "auto", padding: "10px 16px", fontSize: "0.88rem" }}>
+            {loading ? "Refreshing…" : "↻ Refresh live quote"}
+          </button>
+        </div>
 
-        <div className="grid" style={{ maxWidth: "900px", margin: "0 auto", gridTemplateColumns: "1fr 1fr" }}>
-          {/* Left: Plan selector */}
-          <div className="card premium-card">
+        {quoteLiveFactors &&
+          Array.isArray(quoteLiveFactors.closure_headlines) &&
+          quoteLiveFactors.closure_headlines.length > 0 && (
             <div
+              className="card"
               style={{
-                marginBottom: "14px",
-                borderRadius: "10px",
-                border: `1px solid ${riskColor}`,
-                background: "hsla(210,20%,12%,0.75)",
-                padding: "10px 12px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                maxWidth: "1000px",
+                margin: "0 auto 24px",
+                width: "100%",
+                padding: "14px 18px",
+                fontSize: "0.78rem",
+                color: "var(--text-dim)",
+                lineHeight: 1.45,
               }}
             >
-              <span style={{ fontSize: "0.82rem", color: "var(--text-dim)" }}>Risk profile</span>
-              <strong style={{ color: riskColor, letterSpacing: "0.04em" }}>
-                {(plansQuote?.risk_level || "moderate").toUpperCase()}
-              </strong>
+              <strong style={{ color: "var(--text-secondary)" }}>News matched:</strong>
+              <ul style={{ margin: "6px 0 0 18px", padding: 0 }}>
+                {quoteLiveFactors.closure_headlines.slice(0, 3).map((h: { title?: string }, i: number) => (
+                  <li key={i}>{h.title || "(no title)"}</li>
+                ))}
+              </ul>
             </div>
+          )}
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {planList.map((plan: any) => {
-                const isSelected = selectedPlan?.plan_id === plan.plan_id;
-                const isRecommended = plan.plan_id === "standard";
-                return (
-                  <button
-                    key={plan.plan_id}
-                    type="button"
-                    onClick={() => setSelectedPlanId(plan.plan_id)}
-                    style={{
-                      textAlign: "left",
-                      borderRadius: "12px",
-                      border: isSelected ? "1px solid var(--primary)" : "1px solid var(--border)",
-                      background: isSelected ? "hsla(250,85%,65%,0.10)" : "hsla(210,20%,12%,0.70)",
-                      padding: "14px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" }}>
-                      <div>
-                        <div style={{ fontWeight: 700 }}>{plan.label}</div>
-                        <div style={{ fontSize: "0.8rem", color: "var(--text-dim)", marginTop: "4px" }}>
-                          {plan.description}
+        <div className="quote-main-grid" style={{ maxWidth: "1000px", margin: "0 auto", width: "100%" }}>
+          <div className="quote-plans-col">
+            <div className="card premium-card">
+              <div
+                style={{
+                  marginBottom: "16px",
+                  borderRadius: "10px",
+                  border: `1px solid ${riskColor}`,
+                  background: "var(--accent-light)",
+                  padding: "10px 14px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  Risk level
+                </span>
+                <strong style={{ color: riskColor, letterSpacing: "0.05em", fontSize: "0.85rem" }}>
+                  {(plansQuote?.risk_level || "moderate").toUpperCase()}
+                </strong>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {planList.map((plan: any, planIdx: number) => {
+                  const isSelected = selectedPlan?.plan_id === plan.plan_id;
+                  const isRecommended = plan.plan_id === "standard";
+                  const tierClass = planIdx % 3 === 0 ? "plan-tier-a" : planIdx % 3 === 1 ? "plan-tier-b" : "plan-tier-c";
+                  return (
+                    <button
+                      key={plan.plan_id}
+                      type="button"
+                      onClick={() => setSelectedPlanId(plan.plan_id)}
+                      className={`plan-select-btn ${isSelected ? "selected" : ""} ${tierClass}`}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" }}>
+                        <div>
+                          <div style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif', fontWeight: 800, fontSize: "1.02rem", color: "var(--navy)" }}>
+                            {plan.label}
+                          </div>
+                          <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "4px", lineHeight: 1.45 }}>{plan.description}</div>
                         </div>
+                        {isRecommended && (
+                          <span
+                            style={{
+                              borderRadius: "999px",
+                              border: "1px solid var(--success-border)",
+                              color: "var(--success)",
+                              background: "var(--success-bg)",
+                              fontSize: "0.65rem",
+                              fontWeight: 800,
+                              padding: "4px 8px",
+                              letterSpacing: "0.06em",
+                            }}
+                          >
+                            TOP PICK
+                          </span>
+                        )}
                       </div>
-                      {isRecommended && (
+                      <div style={{ marginTop: "12px", display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: "8px" }}>
+                        <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--accent)", fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
+                          ₹{Number(plan.premium_weekly).toFixed(0)}
+                          <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", fontWeight: 600, marginLeft: "4px" }}>/week</span>
+                        </div>
+                        <div style={{ fontSize: "0.76rem", color: "var(--text-muted)", fontWeight: 600 }}>{Number(plan.risk_rate_pct).toFixed(2)}% risk rate</div>
+                      </div>
+                      <div style={{ marginTop: "10px", display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+                        <span style={{ fontWeight: 700, color: "var(--success)" }}>Max ₹{Number(plan.max_weekly_payout).toFixed(0)}</span>
                         <span
                           style={{
                             borderRadius: "999px",
-                            border: "1px solid var(--success)",
-                            color: "var(--success)",
-                            background: "hsla(140,60%,55%,0.12)",
-                            fontSize: "0.68rem",
+                            padding: "2px 10px",
+                            fontSize: "0.72rem",
                             fontWeight: 700,
-                            padding: "3px 7px",
-                            letterSpacing: "0.05em",
+                            background: "var(--surface-raised)",
+                            border: "1px solid var(--border)",
+                            color: "var(--text-secondary)",
                           }}
                         >
-                          RECOMMENDED
+                          {(Number(plan.coverage_pct) * 100).toFixed(0)}% coverage
                         </span>
-                      )}
-                    </div>
-                    <div style={{ marginTop: "10px", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <div style={{ fontSize: "1.45rem", fontWeight: 800, color: "var(--primary-hover)" }}>
-                        ₹{Number(plan.premium_weekly).toFixed(0)}
-                        <span style={{ fontSize: "0.8rem", color: "var(--text-dim)", marginLeft: "4px" }}>/week</span>
                       </div>
-                      <div style={{ fontSize: "0.78rem", color: "var(--text-dim)" }}>
-                        {Number(plan.risk_rate_pct).toFixed(2)}% risk rate
-                      </div>
-                    </div>
-                    <div style={{ marginTop: "8px", fontSize: "0.82rem", color: "var(--text-muted)" }}>
-                      Max payout ₹{Number(plan.max_weekly_payout).toFixed(0)} · Coverage {(Number(plan.coverage_pct) * 100).toFixed(0)}%
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                    </button>
+                  );
+                })}
+              </div>
 
-            <button onClick={handleSubscribe} disabled={loading || !selectedPlan} style={{ width: "100%", marginTop: "18px", padding: "18px" }}>
-              {loading || !selectedPlan
-                ? "Activating Shield..."
-                : `Pay ₹${Number(selectedPlan.premium_weekly).toFixed(0)} via UPI & Activate`}
-            </button>
+              <button onClick={handleSubscribe} disabled={loading || !selectedPlan} style={{ width: "100%", marginTop: "20px", padding: "18px" }}>
+                {loading || !selectedPlan ? "Activating…" : `Pay ₹${Number(selectedPlan.premium_weekly).toFixed(0)} via UPI & activate`}
+              </button>
 
-            <div className="exclusion-note">
-              ⚠️ Excludes: health, life, accident, vehicle repair coverage
+              <div className="exclusion-note">Excludes: health, life, accident, and vehicle repair coverage.</div>
             </div>
           </div>
 
-          {/* Right: live inputs vs training-time GBM sensitivity */}
-          <div className="card" style={{ background: "hsla(210, 20%, 10%, 0.5)" }}>
-            {exposureInputs && (
-              <>
-                <h3 style={{ marginBottom: "8px" }}>📍 This quote: exposure inputs</h3>
-                <p style={{ color: "var(--text-dim)", fontSize: "0.82rem", lineHeight: 1.5, marginBottom: "16px" }}>
-                  Values fed into your actuarial + ML premium for <strong>{exposureInputs.city}</strong> (0–100% scale).
-                  These come from live/mocked weather, WAQI, news closure signal, and your shift pattern—not from the
-                  training chart below.
-                </p>
-                <div className="feature-importance-list" style={{ marginBottom: "28px" }}>
-                  {exposureRows.map(({ key, label }) => {
-                    const v = Number((exposureInputs as Record<string, number>)[key] ?? 0);
-                    return (
-                      <div className="fi-row" key={key}>
-                        <div className="fi-label">{label}</div>
-                        <div className="fi-bar-container">
-                          <div
-                            className="fi-bar"
-                            style={{
-                              width: `${(v / maxExp) * 100}%`,
-                              background: "linear-gradient(90deg, hsl(190, 75%, 45%), hsl(210, 80%, 55%))",
-                            }}
-                          />
+          <div className="quote-chart-col">
+            <div className="card">
+              {exposureInputs && (
+                <>
+                  <h3 style={{ marginBottom: "8px", fontSize: "1.05rem" }}>This quote: exposure inputs</h3>
+                  <p style={{ color: "var(--text-dim)", fontSize: "0.82rem", lineHeight: 1.55, marginBottom: "18px" }}>
+                    Values fed into your premium for <strong>{exposureInputs.city}</strong> (0–100% scale). From live or mocked weather, AQI, news closure signal, and your shift pattern — not the training chart below.
+                  </p>
+                  <div className="feature-importance-list" style={{ marginBottom: "28px" }}>
+                    {exposureRows.map(({ key, label }) => {
+                      const v = Number((exposureInputs as Record<string, number>)[key] ?? 0);
+                      return (
+                        <div className="fi-row" key={key}>
+                          <div className="fi-label">{label}</div>
+                          <div className="fi-bar-container">
+                            <div className="fi-bar" style={{ width: `${(v / maxExp) * 100}%` }} />
+                          </div>
+                          <div className="fi-value">{(v * 100).toFixed(0)}%</div>
                         </div>
-                        <div className="fi-value">{(v * 100).toFixed(0)}%</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-
-            <h3 style={{ marginBottom: "8px" }}>🧠 GBM sensitivity (training data)</h3>
-            <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", lineHeight: 1.6, marginBottom: "16px" }}>
-              {riskQuote.explanation}
-            </p>
-            <p style={{ color: "var(--text-dim)", fontSize: "0.78rem", lineHeight: 1.5, marginBottom: "16px" }}>
-              The bars below are <strong>global feature importances</strong> from the GBM fit on actuarial-anchored
-              training scenarios. If rain stays high here while live rain is low, that reflects how often the model
-              splits on rain in training—not current rainfall.
-            </p>
-
-            <div className="feature-importance-list">
-              {Object.entries(importances).map(([name, value]) => (
-                <div className="fi-row" key={name}>
-                  <div className="fi-label">{name.replace(/_/g, " ")}</div>
-                  <div className="fi-bar-container">
-                    <div className="fi-bar" style={{ width: `${(Number(value) / maxImp) * 100}%` }} />
+                      );
+                    })}
                   </div>
-                  <div className="fi-value">{(Number(value) * 100).toFixed(1)}%</div>
-                </div>
-              ))}
-            </div>
+                </>
+              )}
 
-            <div className="alert" style={{ background: "hsla(250, 85%, 65%, 0.1)", borderColor: "var(--primary)", marginTop: "24px" }}>
-              <div className="alert-icon">⚡</div>
-              <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                <strong style={{ color: "var(--primary-hover)" }}>Zero-Touch Payouts:</strong> When sensors detect a disruption in {profile?.zone_name}, claims are auto-generated and paid to your UPI instantly.
+              <h3 style={{ marginBottom: "8px", fontSize: "1.05rem" }}>GBM sensitivity (training)</h3>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem", lineHeight: 1.6, marginBottom: "14px" }}>{riskQuote.explanation}</p>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.76rem", lineHeight: 1.5, marginBottom: "16px" }}>
+                Bars show <strong>global feature importances</strong> from the GBM on training scenarios — not current rainfall in your zone.
+              </p>
+
+              <div className="feature-importance-list">
+                {Object.entries(importances).map(([name, value]) => (
+                  <div className="fi-row" key={name}>
+                    <div className="fi-label">{name.replace(/_/g, " ")}</div>
+                    <div className="fi-bar-container">
+                      <div className="fi-bar" style={{ width: `${(Number(value) / maxImp) * 100}%` }} />
+                    </div>
+                    <div className="fi-value">{(Number(value) * 100).toFixed(1)}%</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="alert" style={{ background: "var(--accent-light)", borderColor: "hsl(22, 80%, 82%)", marginTop: "24px" }}>
+                <div className="alert-icon">⚡</div>
+                <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                  <strong style={{ color: "var(--accent-hover)" }}>Zero-touch payouts:</strong> When a covered disruption is detected in {profile?.zone_name}, claims can be generated automatically and paid to your UPI.
+                </div>
               </div>
             </div>
           </div>
@@ -812,7 +839,17 @@ function App() {
     <div className="app-container">
       {/* Sidebar */}
       <aside className="sidebar">
-        <div className="sidebar-logo">SurakshaShift</div>
+        <div className="sidebar-logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+            <path
+              d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"
+              fill="hsl(22, 95%, 55%)"
+              stroke="hsl(22, 95%, 48%)"
+              strokeWidth="1.2"
+            />
+          </svg>
+          <span>SurakshaShift</span>
+        </div>
         <nav className="nav">
           <button
             type="button"
@@ -875,11 +912,17 @@ function App() {
 
           <div className="grid four" style={{ marginTop: "28px" }}>
             <div className="stat-card">
+              <span className="stat-decorator" aria-hidden>
+                ₹
+              </span>
               <span className="stat-label">Weekly Premium</span>
               <span className="stat-value">₹{activePolicy?.premium_weekly || "0"}</span>
               <span className="stat-sub">Auto-renews weekly</span>
             </div>
             <div className="stat-card">
+              <span className="stat-decorator" aria-hidden>
+                🛡️
+              </span>
               <span className="stat-label">Max Payout</span>
               <span className="stat-value" style={{ color: "var(--success)" }}>
                 ₹{activePolicy?.max_weekly_payout || "0"}
@@ -887,6 +930,9 @@ function App() {
               <span className="stat-sub">Up to 40% of avg income</span>
             </div>
             <div className="stat-card">
+              <span className="stat-decorator" aria-hidden>
+                📋
+              </span>
               <span className="stat-label">Total Claimed</span>
               <span className="stat-value" style={{ color: "var(--secondary)" }}>
                 ₹{claimsSummary?.total_payout?.toFixed(0) || "0"}
@@ -894,6 +940,9 @@ function App() {
               <span className="stat-sub">{claimsSummary?.total_claims || 0} claims filed</span>
             </div>
             <div className="stat-card">
+              <span className="stat-decorator" aria-hidden>
+                📈
+              </span>
               <span className="stat-label">Risk Score</span>
               <span className="stat-value" style={{ color: "var(--primary)" }}>
                 {((profile?.risk_score || 0) * 100).toFixed(0)}
@@ -906,36 +955,20 @@ function App() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
               <h3 style={{ display: "flex", alignItems: "center", gap: "8px", margin: 0, flexWrap: "wrap" }}>
                 <span>🧭</span> Shift Guardian
-                <span
-                  style={{
-                    fontSize: "0.72rem",
-                    padding: "3px 8px",
-                    borderRadius: "999px",
-                    background: "hsla(140,60%,55%,0.15)",
-                    border: "1px solid var(--success)",
-                    color: "var(--success)",
-                    fontWeight: 700,
-                    letterSpacing: "0.06em",
-                  }}
-                >
-                  AI-POWERED
-                </span>
+                <span className="shift-ai-badge">AI-POWERED</span>
               </h3>
               <button
                 type="button"
+                className="btn-ghost"
                 onClick={fetchShiftRecommendation}
                 disabled={shiftRecLoading}
                 style={{
-                  padding: "8px 16px",
+                  padding: "10px 16px",
                   fontSize: "0.85rem",
-                  borderRadius: "8px",
-                  background: "hsla(250,85%,65%,0.15)",
-                  border: "1px solid var(--primary)",
-                  color: "var(--primary-hover)",
                   cursor: shiftRecLoading ? "wait" : "pointer",
                 }}
               >
-                {shiftRecLoading ? "Analysing zones..." : "Check Before I Start Shift →"}
+                {shiftRecLoading ? "Analysing zones…" : "Check before I start shift →"}
               </button>
             </div>
 
@@ -957,23 +990,23 @@ function App() {
                       shiftRec.alert_type === "all_clear"
                         ? "var(--success-bg)"
                         : shiftRec.alert_type === "zone_switch_recommended"
-                          ? "hsla(220,85%,62%,0.12)"
+                          ? "var(--surface-raised)"
                           : "var(--warning-bg)",
                     border: `1px solid ${
                       shiftRec.alert_type === "all_clear"
-                        ? "var(--success)"
+                        ? "var(--success-border)"
                         : shiftRec.alert_type === "zone_switch_recommended"
-                          ? "hsl(220,85%,62%)"
-                          : "var(--warning)"
+                          ? "var(--border-strong)"
+                          : "hsl(38, 70%, 72%)"
                     }`,
                     fontSize: "0.9rem",
                     lineHeight: 1.6,
                     color:
                       shiftRec.alert_type === "all_clear"
-                        ? "var(--success)"
+                        ? "hsl(152, 55%, 28%)"
                         : shiftRec.alert_type === "zone_switch_recommended"
-                          ? "hsl(220,90%,74%)"
-                          : "var(--warning)",
+                          ? "var(--text-primary)"
+                          : "hsl(38, 85%, 28%)",
                   }}
                 >
                   {shiftRec.recommendation_text}
@@ -983,30 +1016,32 @@ function App() {
                   <div
                     style={{
                       padding: "14px",
-                      borderRadius: "10px",
-                      background: "hsla(210,20%,10%,0.5)",
-                      border: "1px solid var(--border)",
+                      borderRadius: "12px",
+                      background: "var(--surface)",
+                      border: "1px solid var(--border-strong)",
+                      boxShadow: "var(--shadow-sm)",
                     }}
                   >
                     <div
                       style={{
                         fontSize: "0.72rem",
-                        color: "var(--text-dim)",
+                        color: "var(--text-muted)",
                         textTransform: "uppercase",
                         letterSpacing: "0.06em",
                         marginBottom: "6px",
+                        fontWeight: 700,
                       }}
                     >
                       Your zone
                     </div>
-                    <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: "8px" }}>
+                    <div style={{ fontWeight: 800, fontSize: "1rem", marginBottom: "8px", color: "var(--navy)" }}>
                       📍 {shiftRec.current_zone?.zone_name}
                     </div>
-                    <div style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                    <div style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>
                       Disruption:{" "}
                       <strong style={{ color: "var(--warning)" }}>{shiftRec.current_zone?.disruption_probability}%</strong>
                     </div>
-                    <div style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                    <div style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>
                       Safety score: <strong>{shiftRec.current_zone?.income_protection_score}</strong>/100
                     </div>
                   </div>
@@ -1014,9 +1049,10 @@ function App() {
                   <div
                     style={{
                       padding: "14px",
-                      borderRadius: "10px",
-                      background: "hsla(140,60%,55%,0.08)",
-                      border: "1px solid var(--success)",
+                      borderRadius: "12px",
+                      background: "var(--success-bg)",
+                      border: "1px solid var(--success-border)",
+                      boxShadow: "var(--shadow-sm)",
                     }}
                   >
                     <div
@@ -1026,20 +1062,21 @@ function App() {
                         textTransform: "uppercase",
                         letterSpacing: "0.06em",
                         marginBottom: "6px",
+                        fontWeight: 700,
                       }}
                     >
                       Recommended
                     </div>
-                    <div style={{ fontWeight: 700, fontSize: "1rem", marginBottom: "8px" }}>
+                    <div style={{ fontWeight: 800, fontSize: "1rem", marginBottom: "8px", color: "var(--navy)" }}>
                       ✅ {shiftRec.recommended_zone?.zone_name}
                     </div>
-                    <div style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                    <div style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>
                       Disruption:{" "}
                       <strong style={{ color: "var(--success)" }}>
                         {shiftRec.recommended_zone?.disruption_probability}%
                       </strong>
                     </div>
-                    <div style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                    <div style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>
                       Safety score: <strong>{shiftRec.recommended_zone?.income_protection_score}</strong>/100
                     </div>
                   </div>
@@ -1048,10 +1085,11 @@ function App() {
                 {shiftRec.estimated_income_difference > 0 && (
                   <div
                     style={{
-                      padding: "12px 16px",
-                      borderRadius: "10px",
-                      background: "hsla(250,85%,65%,0.1)",
-                      border: "1px solid var(--primary)",
+                      padding: "14px 18px",
+                      borderRadius: "12px",
+                      background: "var(--surface)",
+                      border: "1px solid var(--border)",
+                      boxShadow: "var(--shadow-sm)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
@@ -1059,10 +1097,10 @@ function App() {
                       gap: "8px",
                     }}
                   >
-                    <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                    <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
                       Estimated income protected by switching zones
                     </span>
-                    <span style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--primary-hover)" }}>
+                    <span style={{ fontSize: "1.45rem", fontWeight: 800, color: "var(--accent)", fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
                       +₹{Number(shiftRec.estimated_income_difference).toFixed(0)}
                     </span>
                   </div>
@@ -1082,23 +1120,22 @@ function App() {
                       All nearby zones
                     </div>
                     <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      {[shiftRec.current_zone, ...shiftRec.alternatives].map((z: any) => (
-                        <div
-                          key={z.zone_name}
-                          style={{
-                            padding: "8px 12px",
-                            borderRadius: "8px",
-                            fontSize: "0.78rem",
-                            background: "hsla(210,20%,12%,0.6)",
-                            border: "1px solid var(--border)",
-                          }}
-                        >
-                          <div style={{ fontWeight: 600 }}>{z.zone_name}</div>
-                          <div style={{ color: "var(--text-dim)", marginTop: "2px" }}>
-                            {z.disruption_probability}% · {z.risk_level}
+                      {[shiftRec.current_zone, ...shiftRec.alternatives].map((z: any) => {
+                        const rl = String(z.risk_level || "").toLowerCase();
+                        const dotColor =
+                          rl === "low" ? "var(--success)" : rl === "high" || rl === "critical" ? "var(--error)" : "var(--accent)";
+                        return (
+                          <div key={z.zone_name} className="zone-pill">
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <span style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
+                              <span style={{ fontWeight: 700, color: "var(--navy)" }}>{z.zone_name}</span>
+                            </div>
+                            <div style={{ color: "var(--text-muted)", marginTop: "4px", fontSize: "0.76rem" }}>
+                              {z.disruption_probability}% · {z.risk_level}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -1120,11 +1157,46 @@ function App() {
 
             <div className="trigger-grid">
               {[
-                { id: "rain", icon: "🌧️", label: "Heavy Rain", desc: "62mm/hr rainfall", color: "hsl(210, 80%, 40%)" },
-                { id: "flood", icon: "🌊", label: "Flash Flood", desc: "Water level 35cm+", color: "hsl(200, 70%, 35%)" },
-                { id: "aqi", icon: "😷", label: "AQI Severe", desc: "AQI > 300 (hazardous)", color: "hsl(30, 70%, 40%)" },
-                { id: "closure", icon: "🚧", label: "Zone Closure", desc: "Curfew / strike alert", color: "hsl(350, 70%, 40%)" },
-                { id: "outage", icon: "📡", label: "Platform Outage", desc: `${profile?.platform_name} down 45min`, color: "hsl(270, 60%, 40%)" },
+                {
+                  id: "rain",
+                  icon: "🌧️",
+                  label: "Heavy Rain",
+                  desc: "62mm/hr rainfall",
+                  color: "hsl(210, 80%, 40%)",
+                  iconBg: "hsla(210, 85%, 92%, 1)",
+                },
+                {
+                  id: "flood",
+                  icon: "🌊",
+                  label: "Flash Flood",
+                  desc: "Water level 35cm+",
+                  color: "hsl(185, 65%, 36%)",
+                  iconBg: "hsla(185, 70%, 92%, 1)",
+                },
+                {
+                  id: "aqi",
+                  icon: "😷",
+                  label: "AQI Severe",
+                  desc: "AQI > 300 (hazardous)",
+                  color: "hsl(38, 88%, 42%)",
+                  iconBg: "hsla(38, 92%, 94%, 1)",
+                },
+                {
+                  id: "closure",
+                  icon: "🚧",
+                  label: "Zone Closure",
+                  desc: "Curfew / strike alert",
+                  color: "hsl(4, 72%, 48%)",
+                  iconBg: "hsla(4, 75%, 95%, 1)",
+                },
+                {
+                  id: "outage",
+                  icon: "📡",
+                  label: "Platform Outage",
+                  desc: `${profile?.platform_name} down 45min`,
+                  color: "hsl(270, 55%, 48%)",
+                  iconBg: "hsla(270, 60%, 95%, 1)",
+                },
               ].map(t => (
                 <button
                   key={t.id}
@@ -1133,7 +1205,9 @@ function App() {
                   disabled={triggerLoading !== null || !activePolicy}
                   style={{ "--trigger-color": t.color } as React.CSSProperties}
                 >
-                  <span className="trigger-icon">{t.icon}</span>
+                  <span className="trigger-icon-wrap" style={{ background: t.iconBg }}>
+                    <span className="trigger-icon">{t.icon}</span>
+                  </span>
                   <span className="trigger-label">{t.label}</span>
                   <span className="trigger-desc">{t.desc}</span>
                   {triggerLoading === t.id && <span className="trigger-loading" />}
@@ -1141,7 +1215,7 @@ function App() {
               ))}
             </div>
 
-            <div className="alert" style={{ background: "hsla(210, 20%, 15%, 0.8)", borderColor: "var(--border)", marginTop: "20px" }}>
+            <div className="alert" style={{ background: "var(--surface-raised)", borderColor: "var(--border)", marginTop: "20px" }}>
               <div className="alert-icon">ℹ️</div>
               <div style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
                 Each trigger ingests a disruption event → the backend matches it against your active policy → runs ML fraud scoring → auto-creates & approves a claim → payout is calculated based on disrupted hours and your weekly income.
@@ -1154,15 +1228,15 @@ function App() {
                 style={{
                   marginTop: "14px",
                   background: simulatorLastResult.error
-                    ? "hsla(350, 50%, 20%, 0.5)"
+                    ? "var(--error-bg)"
                     : simulatorLastResult.deduplicated
-                      ? "hsla(40, 60%, 20%, 0.45)"
-                      : "hsla(140, 45%, 18%, 0.45)",
+                      ? "var(--warning-bg)"
+                      : "var(--success-bg)",
                   borderColor: simulatorLastResult.error
-                    ? "hsl(350, 60%, 45%)"
+                    ? "hsl(4, 55%, 78%)"
                     : simulatorLastResult.deduplicated
-                      ? "var(--warning)"
-                      : "var(--success)",
+                      ? "hsl(38, 70%, 72%)"
+                      : "var(--success-border)",
                 }}
               >
                 <div className="alert-icon">{simulatorLastResult.error ? "⚠️" : simulatorLastResult.deduplicated ? "⏳" : "✓"}</div>
@@ -1348,7 +1422,7 @@ function App() {
                     </div>
                     <div
                       className="item-amount"
-                      style={{ color: claim.status === "approved" ? "var(--success)" : "var(--text-main)" }}
+                      style={{ color: claim.status === "approved" ? "var(--success)" : "var(--text-muted)" }}
                     >
                       ₹ {claim.approved_payout}
                     </div>
