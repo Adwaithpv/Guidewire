@@ -41,6 +41,7 @@ function App() {
 
   const [loading, setLoading] = useState(false);
   const [triggerLoading, setTriggerLoading] = useState<string | null>(null);
+  const [simulatorLastResult, setSimulatorLastResult] = useState<any>(null);
   const [shiftRec, setShiftRec] = useState<any>(null);
   const [shiftRecLoading, setShiftRecLoading] = useState(false);
 
@@ -198,15 +199,20 @@ function App() {
 
   // ── Trigger Handler ──
   const handleTrigger = async (type: string) => {
-    if (!profile) return;
+    if (!profile?.zone_name) {
+      alert("Zone not loaded — refresh the dashboard or re-register.");
+      return;
+    }
     setTriggerLoading(type);
+    setSimulatorLastResult(null);
     const now = new Date();
     const oneHourAgo = new Date(now.getTime() - 3600000);
     const twoHoursAgo = new Date(now.getTime() - 7200000);
     try {
+      let res: any;
       switch (type) {
         case "rain":
-          await api.ingestWeather({
+          res = await api.ingestWeather({
             event_type: "heavy_rain",
             zone_name: profile.zone_name,
             started_at: oneHourAgo.toISOString(),
@@ -217,7 +223,7 @@ function App() {
           });
           break;
         case "flood":
-          await api.ingestFlood({
+          res = await api.ingestFlood({
             event_type: "flood",
             zone_name: profile.zone_name,
             started_at: twoHoursAgo.toISOString(),
@@ -228,7 +234,7 @@ function App() {
           });
           break;
         case "aqi":
-          await api.ingestAqi({
+          res = await api.ingestAqi({
             event_type: "aqi_severe",
             zone_name: profile.zone_name,
             started_at: oneHourAgo.toISOString(),
@@ -239,7 +245,7 @@ function App() {
           });
           break;
         case "closure":
-          await api.ingestClosure({
+          res = await api.ingestClosure({
             event_type: "curfew",
             zone_name: profile.zone_name,
             started_at: twoHoursAgo.toISOString(),
@@ -249,7 +255,7 @@ function App() {
           });
           break;
         case "outage":
-          await api.ingestPlatformOutage({
+          res = await api.ingestPlatformOutage({
             event_type: "platform_outage",
             zone_name: profile.zone_name,
             started_at: oneHourAgo.toISOString(),
@@ -259,10 +265,17 @@ function App() {
             source_payload: { platform: profile.platform_name, downtime_min: 45 },
           });
           break;
+        default:
+          return;
       }
+      setSimulatorLastResult(res);
       await fetchDashboardData();
     } catch (err) {
       console.error(err);
+      setSimulatorLastResult({
+        error: true,
+        message: err instanceof Error ? err.message : "Simulator request failed",
+      });
     } finally {
       setTimeout(() => setTriggerLoading(null), 600);
     }
@@ -1128,6 +1141,41 @@ function App() {
                 Each trigger ingests a disruption event → the backend matches it against your active policy → runs ML fraud scoring → auto-creates & approves a claim → payout is calculated based on disrupted hours and your weekly income.
               </div>
             </div>
+
+            {simulatorLastResult && (
+              <div
+                className="alert"
+                style={{
+                  marginTop: "14px",
+                  background: simulatorLastResult.error
+                    ? "hsla(350, 50%, 20%, 0.5)"
+                    : simulatorLastResult.deduplicated
+                      ? "hsla(40, 60%, 20%, 0.45)"
+                      : "hsla(140, 45%, 18%, 0.45)",
+                  borderColor: simulatorLastResult.error
+                    ? "hsl(350, 60%, 45%)"
+                    : simulatorLastResult.deduplicated
+                      ? "var(--warning)"
+                      : "var(--success)",
+                }}
+              >
+                <div className="alert-icon">{simulatorLastResult.error ? "⚠️" : simulatorLastResult.deduplicated ? "⏳" : "✓"}</div>
+                <div style={{ fontSize: "0.82rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
+                  {simulatorLastResult.error ? (
+                    <span>{simulatorLastResult.message}</span>
+                  ) : simulatorLastResult.deduplicated ? (
+                    <span>{simulatorLastResult.reason || "Duplicate event skipped (cooldown still applies to non-mock ingests)."}</span>
+                  ) : (
+                    <span>
+                      Event #{simulatorLastResult.event_id}: <strong>{simulatorLastResult.claim_candidates}</strong> claim(s) created.
+                      {simulatorLastResult.claim_candidates === 0 && (
+                        <> Check policy coverage window, zone match, or weekly payout cap.</>
+                      )}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </section>
 

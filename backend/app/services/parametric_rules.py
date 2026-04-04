@@ -136,7 +136,8 @@ def recent_duplicate_event(
     """Avoid stacking identical zone events from polling / retries (real ops guard)."""
     from datetime import timedelta
 
-    since = datetime.now(timezone.utc) - timedelta(hours=cooldown_hours)
+    # Match naive UTC timestamps stored on DisruptionEvent (ingest normalizes to UTC naive).
+    since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=cooldown_hours)
     return db.scalar(
         select(DisruptionEvent)
         .where(

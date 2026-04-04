@@ -10,6 +10,7 @@ from app.models.entities import DisruptionEvent, Zone
 from app.schemas.common import EventIngestRequest
 from app.services.parametric_rules import recent_duplicate_event
 from app.services.trigger_engine import create_claim_candidates
+from app.timeutil import to_utc_naive
 
 router = APIRouter(prefix="/events", tags=["events"])
 
@@ -19,14 +20,20 @@ def _ingest(payload: EventIngestRequest, db: Session) -> dict:
     if zone is None:
         raise HTTPException(status_code=404, detail="Zone not found")
 
-    dup = recent_duplicate_event(db, zone.id, payload.event_type)
-    if dup is not None:
-        return {
-            "event_id": dup.id,
-            "claim_candidates": 0,
-            "deduplicated": True,
-            "reason": "Same zone and event type within cooldown window",
-        }
+    # Dashboard "Mock …" simulator: allow repeated clicks for demos (skip 6h dedupe).
+    is_demo_simulator = (payload.source_name or "").startswith("Mock")
+    if not is_demo_simulator:
+        dup = recent_duplicate_event(db, zone.id, payload.event_type)
+        if dup is not None:
+            return {
+                "event_id": dup.id,
+                "claim_candidates": 0,
+                "deduplicated": True,
+                "reason": "Same zone and event type within cooldown window",
+            }
+
+    started_at = to_utc_naive(payload.started_at)
+    ended_at = to_utc_naive(payload.ended_at)
 
     payload_json = (
         json.dumps(payload.source_payload, default=str)
@@ -36,8 +43,8 @@ def _ingest(payload: EventIngestRequest, db: Session) -> dict:
     event = DisruptionEvent(
         event_type=payload.event_type,
         zone_id=zone.id,
-        started_at=payload.started_at,
-        ended_at=payload.ended_at,
+        started_at=started_at,
+        ended_at=ended_at,
         severity=payload.severity,
         source_name=payload.source_name,
         source_payload=payload_json,
