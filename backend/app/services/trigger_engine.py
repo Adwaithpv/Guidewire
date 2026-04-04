@@ -28,6 +28,7 @@ def find_impacted_policies(db: Session, zone_id: int, started_at: datetime, ende
                 Policy.coverage_end >= started_at,
             )
         )
+        .order_by(Policy.id.desc())
     )
     return list(db.execute(stmt).all())
 
@@ -42,6 +43,15 @@ def create_claim_candidates(
         impacted = [(w, p) for w, p in impacted if w.id == restrict_worker_id]
     claims: list[Claim] = []
     for worker, policy in impacted:
+        # One claim per worker per disruption event (avoids N identical claims when N active policies exist).
+        if db.scalar(
+            select(Claim.id).where(
+                Claim.worker_id == worker.id,
+                Claim.event_id == event.id,
+            ).limit(1)
+        ):
+            continue
+
         trig = policy_trigger_for_event(db, policy.id, event.event_type)
         if trig is None:
             continue
@@ -55,16 +65,6 @@ def create_claim_candidates(
         disrupted_hours = effective_loss_hours(
             worker.shift_type, event.started_at, event.ended_at
         )
-
-        existing = db.scalar(
-            select(Claim).where(
-                Claim.worker_id == worker.id,
-                Claim.policy_id == policy.id,
-                Claim.event_id == event.id,
-            )
-        )
-        if existing:
-            continue
         estimated_loss, payout = estimate_payout(
             worker.avg_weekly_income, disrupted_hours, budget
         )

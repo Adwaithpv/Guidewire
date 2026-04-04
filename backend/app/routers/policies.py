@@ -135,11 +135,21 @@ def policy_quote_plans(
     )
 
 
+def _supersede_active_policies(db: Session, worker_id: int) -> None:
+    """Only one active policy per worker; older rows become superseded (prevents duplicate claims per event)."""
+    for p in db.scalars(
+        select(Policy).where(and_(Policy.worker_id == worker_id, Policy.status == "active"))
+    ).all():
+        p.status = "superseded"
+
+
 @router.post("/create")
 def create_policy(payload: PolicyCreateRequest, db: Session = Depends(get_db)) -> dict:
     worker = db.scalar(select(WorkerProfile).where(WorkerProfile.id == payload.worker_id))
     if worker is None:
         raise HTTPException(status_code=404, detail="Worker not found")
+
+    _supersede_active_policies(db, payload.worker_id)
 
     start, end = coverage_window()
     policy = Policy(
@@ -194,9 +204,12 @@ def renew_policy(worker_id: int, db: Session = Depends(get_db)) -> dict:
     )
     if latest is None:
         raise HTTPException(status_code=404, detail="No active policy")
+    old_triggers = db.scalars(select(PolicyTrigger).where(PolicyTrigger.policy_id == latest.id)).all()
+    latest.status = "superseded"
     start, end = coverage_window(latest.coverage_end)
     renewed = Policy(
         worker_id=latest.worker_id,
+        plan_name=latest.plan_name,
         premium_weekly=latest.premium_weekly,
         max_weekly_payout=latest.max_weekly_payout,
         coverage_start=start,
@@ -205,6 +218,16 @@ def renew_policy(worker_id: int, db: Session = Depends(get_db)) -> dict:
         auto_renew=latest.auto_renew,
     )
     db.add(renewed)
+    db.flush()
+    for t in old_triggers:
+        db.add(
+            PolicyTrigger(
+                policy_id=renewed.id,
+                trigger_type=t.trigger_type,
+                threshold_value=t.threshold_value,
+                payout_formula_type=t.payout_formula_type,
+            )
+        )
     db.commit()
     db.refresh(renewed)
     return {"policy_id": renewed.id, "status": renewed.status}

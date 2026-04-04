@@ -917,7 +917,7 @@ function App() {
             className={`nav-link ${dashboardSection === "claims" ? "active" : ""}`}
             onClick={() => scrollToDashboardSection("claims")}
           >
-            📋 Claims History
+            📋 My claims
           </button>
           <button
             type="button"
@@ -1373,7 +1373,7 @@ function App() {
                     {simPipelineStep >= 5 && (
                       <div className={`sim-pipeline-done ${n === 0 ? "muted" : ""}`}>
                         {n > 0
-                          ? "Pipeline complete — see Claims history for the new entry."
+                          ? "Pipeline complete — see My claims for the new entry."
                           : "Run complete — adjust coverage or try another trigger."}
                       </div>
                     )}
@@ -1529,12 +1529,15 @@ function App() {
         </section>
 
         <section id="dash-claims" className="dashboard-section" aria-labelledby="dash-claims-title" style={{ marginTop: "40px", marginBottom: "48px" }}>
-          <h2 id="dash-claims-title" style={{ fontSize: "1.35rem", marginBottom: "16px" }}>
-            📋 Claims History
+          <h2 id="dash-claims-title" style={{ fontSize: "1.35rem", marginBottom: "6px" }}>
+            📋 My claim history
           </h2>
+          <p className="subtitle" style={{ fontSize: "0.88rem", marginBottom: "16px" }}>
+            Only claims linked to your profile and policies are shown here.
+          </p>
           <div className="card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <h3 style={{ margin: 0 }}>All claims</h3>
+              <h3 style={{ margin: 0 }}>Your claims</h3>
               {claimsSummary && (
                 <span className="badge success" style={{ fontSize: "0.75rem" }}>
                   {claimsSummary.approved_claims} approved · {claimsSummary.pending_claims || 0} pending
