@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -104,7 +104,7 @@ async def check_live_events(city: str, db: Session = Depends(get_db)) -> dict:
     aqi_risks = aqi_to_risk_factor(aqi_data)
 
     events_created = 0
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     # Find zones in this city
     zones = db.scalars(select(Zone).where(Zone.city == city)).all()

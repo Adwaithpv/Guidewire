@@ -11,7 +11,7 @@ import asyncio
 import hashlib
 import math
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from app.services.aqi_service import aqi_to_risk_factor, get_current_aqi
@@ -202,7 +202,7 @@ async def generate_shift_recommendation(
     else:
         alert_type = "all_clear"
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     forecast_window = f"{now:%Y-%m-%d %H:%M} UTC → {(now + timedelta(hours=4)):%H:%M} UTC"
 
     return ShiftRecommendation(
@@ -214,7 +214,7 @@ async def generate_shift_recommendation(
         alert_type=alert_type,
         risk_level=best.risk_level,
         forecast_window=forecast_window,
-        generated_at=now.replace(microsecond=0).isoformat() + "Z",
+        generated_at=now.replace(microsecond=0).isoformat().replace("+00:00", "Z"),
     )
 
 

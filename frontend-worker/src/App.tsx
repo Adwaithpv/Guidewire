@@ -11,6 +11,8 @@ function App() {
   const [workerId, setWorkerId] = useState<number | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [riskQuote, setRiskQuote] = useState<any>(null);
+  const [plansQuote, setPlansQuote] = useState<any>(null);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>("standard");
   /** Snapshot from /risk/quote-live (live weather + AQI used for ML inputs). */
   const [quoteLiveFactors, setQuoteLiveFactors] = useState<any>(null);
   const [policies, setPolicies] = useState<any[]>([]);
@@ -133,9 +135,14 @@ function App() {
       const p = await api.getProfile(res.worker_id);
       setProfile(p);
 
-      // ML quote from live weather + AQI (same pipeline as dashboard)
-      const quote = await api.getRiskQuoteLive(res.worker_id);
+      // Load quote and all plan tiers together for selection UX.
+      const [quote, allPlans] = await Promise.all([
+        api.getRiskQuoteLive(res.worker_id),
+        api.getQuotePlans(res.worker_id),
+      ]);
       setRiskQuote(quote);
+      setPlansQuote(allPlans);
+      setSelectedPlanId("standard");
       setQuoteLiveFactors(quote.live_factors ?? null);
       setView("quote");
     } catch (err) {
@@ -149,8 +156,12 @@ function App() {
     if (!workerId) return;
     setLoading(true);
     try {
-      const quote = await api.getRiskQuoteLive(workerId);
+      const [quote, allPlans] = await Promise.all([
+        api.getRiskQuoteLive(workerId),
+        api.getQuotePlans(workerId),
+      ]);
       setRiskQuote(quote);
+      setPlansQuote(allPlans);
       setQuoteLiveFactors(quote.live_factors ?? null);
     } catch {
       alert("Could not refresh quote — check API connection.");
@@ -161,13 +172,19 @@ function App() {
 
   // ── Subscribe ──
   const handleSubscribe = async () => {
-    if (!workerId || !riskQuote) return;
+    if (!workerId || !plansQuote?.plans?.length) return;
+    const selectedPlan =
+      plansQuote.plans.find((p: any) => p.plan_id === selectedPlanId) ||
+      plansQuote.plans.find((p: any) => p.plan_id === "standard") ||
+      plansQuote.plans[0];
+    if (!selectedPlan) return;
     setLoading(true);
     try {
       await api.createPolicy({
         worker_id: workerId,
-        premium_weekly: riskQuote.premium_weekly,
-        max_weekly_payout: riskQuote.max_weekly_payout,
+        plan_id: selectedPlan.plan_id,
+        premium_weekly: selectedPlan.premium_weekly,
+        max_weekly_payout: selectedPlan.max_weekly_payout,
         covered_events: ["heavy_rain", "flood", "aqi_severe", "curfew", "platform_outage"],
         auto_renew: true,
       });
@@ -343,7 +360,7 @@ function App() {
             )}
           </div>
           <div className="wizard-footer">
-            Covering 10L+ workers across India · Weekly Plans from ₹19
+            Covering 10L+ workers across India · Weekly Plans from ₹15
           </div>
         </div>
       </div>
@@ -493,6 +510,20 @@ function App() {
           ...exposureRows.map(r => Number((exposureInputs as Record<string, number>)[r.key] ?? 0)),
         )
       : 1;
+    const planList = plansQuote?.plans ?? [];
+    const selectedPlan =
+      planList.find((p: any) => p.plan_id === selectedPlanId) ||
+      planList.find((p: any) => p.plan_id === "standard") ||
+      planList[0];
+    const riskTone = (plansQuote?.risk_level || "moderate").toLowerCase();
+    const riskColor =
+      riskTone === "low"
+        ? "var(--success)"
+        : riskTone === "moderate"
+          ? "var(--primary-hover)"
+          : riskTone === "high"
+            ? "var(--warning)"
+            : "hsl(350, 80%, 62%)";
     return (
       <div className="app-container center-view" style={{ padding: "40px" }}>
         <div className="wizard-progress" style={{ marginBottom: "40px" }}>
@@ -596,45 +627,89 @@ function App() {
         )}
 
         <div className="grid" style={{ maxWidth: "900px", margin: "0 auto", gridTemplateColumns: "1fr 1fr" }}>
-          {/* Left: Premium Card */}
+          {/* Left: Plan selector */}
           <div className="card premium-card">
-            <div className="premium-badge">Weekly Plan</div>
-            <div className="premium-amount">
-              <span className="currency">₹</span>
-              <span className="amount">{riskQuote.premium_weekly.toFixed(2)}</span>
-              <span className="period">/week</span>
+            <div
+              style={{
+                marginBottom: "14px",
+                borderRadius: "10px",
+                border: `1px solid ${riskColor}`,
+                background: "hsla(210,20%,12%,0.75)",
+                padding: "10px 12px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <span style={{ fontSize: "0.82rem", color: "var(--text-dim)" }}>Risk profile</span>
+              <strong style={{ color: riskColor, letterSpacing: "0.04em" }}>
+                {(plansQuote?.risk_level || "moderate").toUpperCase()}
+              </strong>
             </div>
 
-            <div className="premium-details">
-              <div className="detail-row">
-                <span>Risk Score</span>
-                <span className="detail-value">{(riskQuote.risk_score * 100).toFixed(0)}%</span>
-              </div>
-              <div className="detail-row">
-                <span>Max Weekly Payout</span>
-                <span className="detail-value" style={{ color: "var(--success)" }}>₹ {riskQuote.max_weekly_payout}</span>
-              </div>
-              <div className="detail-row">
-                <span>ML Confidence</span>
-                <span className="detail-value">{(riskQuote.confidence_level * 100).toFixed(0)}%</span>
-              </div>
-              <div className="detail-row">
-                <span>Model Version</span>
-                <span className="detail-value">{riskQuote.model_version}</span>
-              </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {planList.map((plan: any) => {
+                const isSelected = selectedPlan?.plan_id === plan.plan_id;
+                const isRecommended = plan.plan_id === "standard";
+                return (
+                  <button
+                    key={plan.plan_id}
+                    type="button"
+                    onClick={() => setSelectedPlanId(plan.plan_id)}
+                    style={{
+                      textAlign: "left",
+                      borderRadius: "12px",
+                      border: isSelected ? "1px solid var(--primary)" : "1px solid var(--border)",
+                      background: isSelected ? "hsla(250,85%,65%,0.10)" : "hsla(210,20%,12%,0.70)",
+                      padding: "14px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" }}>
+                      <div>
+                        <div style={{ fontWeight: 700 }}>{plan.label}</div>
+                        <div style={{ fontSize: "0.8rem", color: "var(--text-dim)", marginTop: "4px" }}>
+                          {plan.description}
+                        </div>
+                      </div>
+                      {isRecommended && (
+                        <span
+                          style={{
+                            borderRadius: "999px",
+                            border: "1px solid var(--success)",
+                            color: "var(--success)",
+                            background: "hsla(140,60%,55%,0.12)",
+                            fontSize: "0.68rem",
+                            fontWeight: 700,
+                            padding: "3px 7px",
+                            letterSpacing: "0.05em",
+                          }}
+                        >
+                          RECOMMENDED
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ marginTop: "10px", display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <div style={{ fontSize: "1.45rem", fontWeight: 800, color: "var(--primary-hover)" }}>
+                        ₹{Number(plan.premium_weekly).toFixed(0)}
+                        <span style={{ fontSize: "0.8rem", color: "var(--text-dim)", marginLeft: "4px" }}>/week</span>
+                      </div>
+                      <div style={{ fontSize: "0.78rem", color: "var(--text-dim)" }}>
+                        {Number(plan.risk_rate_pct).toFixed(2)}% risk rate
+                      </div>
+                    </div>
+                    <div style={{ marginTop: "8px", fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                      Max payout ₹{Number(plan.max_weekly_payout).toFixed(0)} · Coverage {(Number(plan.coverage_pct) * 100).toFixed(0)}%
+                    </div>
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="covered-events">
-              <div className="covered-title">Covered Events</div>
-              <div className="event-pills">
-                {["🌧️ Heavy Rain", "🌊 Flood", "😷 AQI Severe", "🚧 Curfew", "📡 Platform Outage"].map(e => (
-                  <span className="event-pill" key={e}>{e}</span>
-                ))}
-              </div>
-            </div>
-
-            <button onClick={handleSubscribe} disabled={loading} style={{ width: "100%", marginTop: "24px", padding: "18px" }}>
-              {loading ? "Activating Shield..." : "Pay ₹" + riskQuote.premium_weekly.toFixed(0) + " via UPI & Activate"}
+            <button onClick={handleSubscribe} disabled={loading || !selectedPlan} style={{ width: "100%", marginTop: "18px", padding: "18px" }}>
+              {loading || !selectedPlan
+                ? "Activating Shield..."
+                : `Pay ₹${Number(selectedPlan.premium_weekly).toFixed(0)} via UPI & Activate`}
             </button>
 
             <div className="exclusion-note">
@@ -841,13 +916,13 @@ function App() {
                   cursor: shiftRecLoading ? "wait" : "pointer",
                 }}
               >
-                {shiftRecLoading ? "Analysing zones…" : "Check before I start shift →"}
+                {shiftRecLoading ? "Analysing zones..." : "Check Before I Start Shift →"}
               </button>
             </div>
 
             {!shiftRec && !shiftRecLoading && (
               <div style={{ textAlign: "center", padding: "28px 0", color: "var(--text-dim)", fontSize: "0.9rem" }}>
-                Run a check before your shift to compare your zone with nearby areas using live weather, AQI, and news signals.
+                Tap the button before starting your shift to see which nearby zone is safest for earnings today.
               </div>
             )}
 
@@ -859,11 +934,27 @@ function App() {
                   style={{
                     padding: "16px",
                     borderRadius: "12px",
-                    background: shiftRec.alert_type === "all_clear" ? "var(--success-bg)" : "var(--warning-bg)",
-                    border: `1px solid ${shiftRec.alert_type === "all_clear" ? "var(--success)" : "var(--warning)"}`,
+                    background:
+                      shiftRec.alert_type === "all_clear"
+                        ? "var(--success-bg)"
+                        : shiftRec.alert_type === "zone_switch_recommended"
+                          ? "hsla(220,85%,62%,0.12)"
+                          : "var(--warning-bg)",
+                    border: `1px solid ${
+                      shiftRec.alert_type === "all_clear"
+                        ? "var(--success)"
+                        : shiftRec.alert_type === "zone_switch_recommended"
+                          ? "hsl(220,85%,62%)"
+                          : "var(--warning)"
+                    }`,
                     fontSize: "0.9rem",
                     lineHeight: 1.6,
-                    color: shiftRec.alert_type === "all_clear" ? "var(--success)" : "var(--warning)",
+                    color:
+                      shiftRec.alert_type === "all_clear"
+                        ? "var(--success)"
+                        : shiftRec.alert_type === "zone_switch_recommended"
+                          ? "hsl(220,90%,74%)"
+                          : "var(--warning)",
                   }}
                 >
                   {shiftRec.recommendation_text}
@@ -969,7 +1060,7 @@ function App() {
                         marginBottom: "8px",
                       }}
                     >
-                      Nearby zones compared
+                      All nearby zones
                     </div>
                     <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                       {[shiftRec.current_zone, ...shiftRec.alternatives].map((z: any) => (

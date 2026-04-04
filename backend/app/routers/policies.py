@@ -1,10 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.entities import Policy, PolicyTrigger, WorkerProfile
-from app.schemas.common import PolicyCreateRequest, PolicyQuoteRequest, PolicyQuoteResponse
+from app.schemas.common import (
+    AllPlansQuoteResponse,
+    PlanQuote,
+    PolicyCreateRequest,
+    PolicyQuoteRequest,
+    PolicyQuoteResponse,
+)
+from app.services.pricing_service import (
+    PLANS,
+    blend_premium,
+    exposure_index,
+    quote_all_plans,
+    risk_level_from_exposure,
+)
 from app.services.policy_service import coverage_window, default_triggers
 from app.services.risk_service import fetch_live_risk_factors_sync, quote_premium, shift_type_to_exposure
 
@@ -40,6 +53,88 @@ def policy_quote(payload: PolicyQuoteRequest, db: Session = Depends(get_db)) -> 
     )
 
 
+@router.post("/quote-plans", response_model=AllPlansQuoteResponse)
+def policy_quote_plans(
+    worker_id: int = Query(...),
+    db: Session = Depends(get_db),
+) -> AllPlansQuoteResponse:
+    worker = db.scalar(select(WorkerProfile).where(WorkerProfile.id == worker_id))
+    if not worker:
+        raise HTTPException(status_code=404, detail="Worker not found")
+
+    from app.ml.premium_model import model as ml_model
+    from app.models.entities import Zone
+
+    zone = db.scalar(select(Zone).where(Zone.id == worker.primary_zone_id))
+    city = zone.city if zone else "Bengaluru"
+    live = fetch_live_risk_factors_sync(city)
+    shift_exposure = shift_type_to_exposure(worker.shift_type)
+
+    composite = exposure_index(
+        live.rain_risk,
+        live.flood_risk,
+        live.aqi_risk,
+        live.closure_risk,
+        shift_exposure,
+        city,
+    )
+    risk_level = risk_level_from_exposure(composite)
+
+    ml_premium = ml_model.predict_premium(
+        live.rain_risk,
+        live.flood_risk,
+        live.aqi_risk,
+        live.closure_risk,
+        shift_exposure,
+        worker.avg_weekly_income,
+        city,
+    )
+    actuarial_plans = quote_all_plans(
+        live.rain_risk,
+        live.flood_risk,
+        live.aqi_risk,
+        live.closure_risk,
+        shift_exposure,
+        worker.avg_weekly_income,
+        city,
+    )
+    plans: list[PlanQuote] = []
+    for p in actuarial_plans:
+        plan_cfg = PLANS[p["plan_id"]]
+        blended = blend_premium(
+            actuarial=float(p["premium_weekly"]),
+            ml_premium=ml_premium,
+            floor=float(plan_cfg["min_premium"]),
+            ceiling=float(plan_cfg["max_premium"]),
+            ml_weight=0.20,
+        )
+        plans.append(
+            PlanQuote(
+                plan_id=p["plan_id"],
+                label=p["label"],
+                description=p["description"],
+                premium_weekly=blended,
+                max_weekly_payout=float(p["max_weekly_payout"]),
+                coverage_pct=float(p["coverage_pct"]),
+                risk_rate_pct=float(p["risk_rate_pct"]),
+                at_floor=bool(blended <= float(plan_cfg["min_premium"])),
+                at_ceiling=bool(blended >= float(plan_cfg["max_premium"])),
+            )
+        )
+
+    return AllPlansQuoteResponse(
+        worker_id=worker_id,
+        city=city,
+        composite_risk=round(composite, 4),
+        risk_level=risk_level,
+        plans=plans,
+        covered_events=["heavy_rain", "flood", "aqi_severe", "curfew", "platform_outage"],
+        exclusions=["health", "life", "accident", "vehicle_repair"],
+        live_factors=live,
+        fetched_at=live.fetched_at,
+    )
+
+
 @router.post("/create")
 def create_policy(payload: PolicyCreateRequest, db: Session = Depends(get_db)) -> dict:
     worker = db.scalar(select(WorkerProfile).where(WorkerProfile.id == payload.worker_id))
@@ -49,6 +144,7 @@ def create_policy(payload: PolicyCreateRequest, db: Session = Depends(get_db)) -
     start, end = coverage_window()
     policy = Policy(
         worker_id=payload.worker_id,
+        plan_name=payload.plan_id,
         premium_weekly=payload.premium_weekly,
         max_weekly_payout=payload.max_weekly_payout,
         coverage_start=start,
@@ -79,6 +175,7 @@ def get_worker_policies(worker_id: int, db: Session = Depends(get_db)) -> list[d
     return [
         {
             "id": p.id,
+            "plan_name": p.plan_name,
             "premium_weekly": float(p.premium_weekly),
             "max_weekly_payout": float(p.max_weekly_payout),
             "coverage_start": p.coverage_start,

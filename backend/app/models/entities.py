@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -16,7 +16,7 @@ class User(Base):
     phone: Mapped[str] = mapped_column(String(20), unique=True, index=True)
     email: Mapped[str | None] = mapped_column(String(120), nullable=True)
     city: Mapped[str] = mapped_column(String(100))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 class Zone(Base):
@@ -107,7 +107,7 @@ class TriggerMatch(Base):
     event_id: Mapped[int] = mapped_column(ForeignKey("disruption_events.id"), index=True)
     worker_id: Mapped[int] = mapped_column(ForeignKey("worker_profiles.id"), index=True)
     policy_id: Mapped[int] = mapped_column(ForeignKey("policies.id"), index=True)
-    matched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    matched_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     expected_payout: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
     status: Mapped[str] = mapped_column(String(30), default="matched")
 
@@ -123,7 +123,7 @@ class Claim(Base):
     status: Mapped[str] = mapped_column(String(30), default="validation_pending")
     estimated_loss: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
     approved_payout: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     auto_created: Mapped[bool] = mapped_column(Boolean, default=True)
 
 
@@ -151,7 +151,7 @@ class Payout(Base):
     method: Mapped[str] = mapped_column(String(20), default="upi")
     status: Mapped[str] = mapped_column(String(20), default="pending")
     gateway_ref: Mapped[str | None] = mapped_column(String(80), nullable=True)
-    initiated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    initiated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
@@ -165,5 +165,5 @@ class ShiftGuardianAlert(Base):
     forecast_window: Mapped[str] = mapped_column(String(120))
     risk_level: Mapped[str] = mapped_column(String(20))
     recommendation_text: Mapped[str] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 

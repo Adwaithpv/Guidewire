@@ -14,6 +14,7 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.preprocessing import StandardScaler
 
 from app.services.pricing_service import (
+    PLANS,
     CITY_RISK_WEIGHTS,
     actuarial_weekly_premium,
     city_risk_factor,
@@ -65,7 +66,7 @@ def _generate_training_data(n: int = 5000) -> tuple[np.ndarray, np.ndarray, np.n
 
         act = actuarial_weekly_premium(rain, flood, aqi, closure, shift_exp, income, city)
         noise_p = _rng.normal(0, 3.5)
-        premium = float(np.clip(act + noise_p, 19.0, 99.0))
+        premium = float(np.clip(act + noise_p, 15.0, float(PLANS["full"]["max_premium"])))
 
         rows.append([rain, flood, aqi, closure, shift_exp, income, city_factor])
         risk_labels.append(risk)
@@ -147,7 +148,7 @@ class PremiumModel:
         )
         scaled = self._scaler.transform(features)  # type: ignore[union-attr]
         pred = self._premium_model.predict(scaled)[0]  # type: ignore[union-attr]
-        return round(float(np.clip(pred, 19.0, 99.0)), 2)
+        return round(float(np.clip(pred, 15.0, float(PLANS["full"]["max_premium"]))), 2)
 
     def get_feature_importances(self) -> dict[str, float]:
         self.train()

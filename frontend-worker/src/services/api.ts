@@ -82,6 +82,10 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ worker_id: workerId }),
     }),
+  getQuotePlans: (workerId: number) =>
+    request(`${API_BASE}/policies/quote-plans?worker_id=${workerId}`, {
+      method: "POST",
+    }),
   createPolicy: (data: any) =>
     request(`${API_BASE}/policies/create`, {
       method: "POST",

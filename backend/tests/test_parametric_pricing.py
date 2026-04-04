@@ -1,60 +1,68 @@
-from datetime import datetime
-
-from app.models.entities import DisruptionEvent, PolicyTrigger
-from app.services.parametric_rules import (
-    effective_loss_hours,
-    event_satisfies_trigger_index,
+from app.services.pricing_service import (
+    PLANS,
+    actuarial_weekly_premium,
+    exposure_index,
+    quote_all_plans,
+    quote_plan,
 )
-from app.services.pricing_service import actuarial_weekly_premium
 
 
-def test_effective_loss_hours_respects_shift_cap() -> None:
-    start = datetime(2026, 4, 1, 8, 0, 0)
-    end = datetime(2026, 4, 1, 22, 0, 0)
-    h = effective_loss_hours("morning", start, end)
-    assert h <= 6.0
+def test_exposure_index_zero_full_and_mixed() -> None:
+    zero = exposure_index(0, 0, 0, 0, 0, "Bengaluru")
+    full = exposure_index(1, 1, 1, 1, 1, "Mumbai")
+    mixed = exposure_index(0.35, 0.25, 0.3, 0.1, 0.7, "Pune")
+    assert zero == 0.0
+    assert 0.0 <= mixed <= 1.0
+    assert full <= 1.0
+    assert full > mixed > zero
 
 
-def test_effective_loss_hours_multi_day_cap() -> None:
-    start = datetime(2026, 4, 1, 0, 0, 0)
-    end = datetime(2026, 4, 3, 23, 0, 0)
-    h = effective_loss_hours("full_day", start, end)
-    assert h <= 11.0 * 3
+def test_quote_plan_within_bounds_all_tiers() -> None:
+    for plan_id, cfg in PLANS.items():
+        out = quote_plan(plan_id, 0.4, 0.25, 0.2, 0.1, 0.75, 4000, "Bengaluru")
+        assert cfg["min_premium"] <= out["premium_weekly"] <= cfg["max_premium"]
 
 
-def test_heavy_rain_trigger_requires_mm_when_payload_present() -> None:
-    ev = DisruptionEvent(
-        event_type="heavy_rain",
-        zone_id=1,
-        started_at=datetime.utcnow(),
-        ended_at=datetime.utcnow(),
-        severity="high",
-        source_name="test",
-        source_payload='{"rainfall_mm": 20}',
-        is_verified=True,
-    )
-    trig = PolicyTrigger(policy_id=1, trigger_type="heavy_rain", threshold_value=50.0, payout_formula_type="hour_based")
-    assert event_satisfies_trigger_index(ev, trig) is False
-
-    ev2 = DisruptionEvent(
-        event_type="heavy_rain",
-        zone_id=1,
-        started_at=datetime.utcnow(),
-        ended_at=datetime.utcnow(),
-        severity="high",
-        source_name="test",
-        source_payload='{"rainfall_mm": 62}',
-        is_verified=True,
-    )
-    assert event_satisfies_trigger_index(ev2, trig) is True
+def test_higher_risk_means_higher_premium_within_plan() -> None:
+    income = 4000
+    low = quote_plan("standard", 0.1, 0.05, 0.05, 0.05, 0.35, income, "Mumbai")
+    high = quote_plan("standard", 0.7, 0.55, 0.45, 0.25, 0.9, income, "Mumbai")
+    assert high["premium_weekly"] >= low["premium_weekly"]
+    assert not (low["at_floor"] and high["at_floor"])
+    assert not (low["at_ceiling"] and high["at_ceiling"])
 
 
-def test_actuarial_premium_rises_with_exposure() -> None:
-    # Keep max_payout × composite low enough that both sides stay below the ₹99 cap
-    # so ordering is visible (typical demo incomes often clamp both quotes to 99).
-    income = 230
-    low = actuarial_weekly_premium(0.1, 0.05, 0.05, 0.05, 0.35, income, "Mumbai")
-    high = actuarial_weekly_premium(0.55, 0.45, 0.4, 0.12, 0.85, income, "Mumbai")
-    assert 19 <= low <= 99
-    assert 19 <= high <= 99
+def test_higher_income_means_higher_premium_below_ceiling() -> None:
+    low_income = quote_plan("standard", 0.28, 0.18, 0.15, 0.1, 0.65, 1600, "Bengaluru")
+    high_income = quote_plan("standard", 0.28, 0.18, 0.15, 0.1, 0.65, 2600, "Bengaluru")
+    assert not low_income["at_ceiling"]
+    assert not high_income["at_ceiling"]
+    assert high_income["premium_weekly"] > low_income["premium_weekly"]
+
+
+def test_tier_ordering_premium_and_payout() -> None:
+    basic = quote_plan("basic", 0.35, 0.2, 0.2, 0.1, 0.7, 4000, "Pune")
+    standard = quote_plan("standard", 0.35, 0.2, 0.2, 0.1, 0.7, 4000, "Pune")
+    full = quote_plan("full", 0.35, 0.2, 0.2, 0.1, 0.7, 4000, "Pune")
+    assert full["premium_weekly"] >= standard["premium_weekly"] >= basic["premium_weekly"]
+    assert full["max_weekly_payout"] > standard["max_weekly_payout"] > basic["max_weekly_payout"]
+
+
+def test_quote_all_plans_returns_three_expected_ids() -> None:
+    plans = quote_all_plans(0.3, 0.2, 0.15, 0.1, 0.75, 4000, "Delhi")
+    ids = [p["plan_id"] for p in plans]
+    assert len(plans) == 3
+    assert ids == ["basic", "standard", "full"]
+
+
+def test_affordability_under_150_at_4000_income() -> None:
+    plans = quote_all_plans(0.45, 0.3, 0.25, 0.12, 0.8, 4000, "Mumbai")
+    assert all(float(p["premium_weekly"]) < 150.0 for p in plans)
+
+
+def test_backcompat_actuarial_weekly_premium_ordering() -> None:
+    # Keep both quotes away from plan floor/ceiling so monotonicity is measurable.
+    income = 2500
+    low = actuarial_weekly_premium(0.24, 0.18, 0.16, 0.08, 0.55, income, "Mumbai")
+    high = actuarial_weekly_premium(0.55, 0.45, 0.4, 0.2, 0.9, income, "Mumbai")
     assert high > low

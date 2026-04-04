@@ -68,10 +68,35 @@ class PolicyQuoteResponse(BaseModel):
 
 class PolicyCreateRequest(BaseModel):
     worker_id: int
+    plan_id: str = "standard"
     premium_weekly: float
     max_weekly_payout: float
     covered_events: list[str]
     auto_renew: bool = False
+
+
+class PlanQuote(BaseModel):
+    plan_id: str
+    label: str
+    description: str
+    premium_weekly: float
+    max_weekly_payout: float
+    coverage_pct: float
+    risk_rate_pct: float
+    at_floor: bool
+    at_ceiling: bool
+
+
+class AllPlansQuoteResponse(BaseModel):
+    worker_id: int
+    city: str
+    composite_risk: float
+    risk_level: str
+    plans: list[PlanQuote]
+    covered_events: list[str]
+    exclusions: list[str]
+    live_factors: "LiveRiskFactors"
+    fetched_at: str
 
 
 class EventIngestRequest(BaseModel):

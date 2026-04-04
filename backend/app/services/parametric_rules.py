@@ -6,7 +6,7 @@ and remaining weekly benefit is not exhausted.
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import func, select
@@ -136,7 +136,7 @@ def recent_duplicate_event(
     """Avoid stacking identical zone events from polling / retries (real ops guard)."""
     from datetime import timedelta
 
-    since = datetime.utcnow() - timedelta(hours=cooldown_hours)
+    since = datetime.now(timezone.utc) - timedelta(hours=cooldown_hours)
     return db.scalar(
         select(DisruptionEvent)
         .where(

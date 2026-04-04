@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -32,7 +32,7 @@ def initiate_payout(claim_id: int, db: Session = Depends(get_db)) -> dict:
     transfer = mock_gateway_transfer(float(claim.approved_payout))
     payout.status = "success" if transfer["status"] == "success" else "failed"
     payout.gateway_ref = transfer["transaction_id"]
-    payout.completed_at = datetime.utcnow()
+    payout.completed_at = datetime.now(timezone.utc)
     claim.status = "paid" if payout.status == "success" else "payout_processing"
     db.commit()
     return {"payout_id": payout.id, "status": payout.status, "gateway_ref": payout.gateway_ref}

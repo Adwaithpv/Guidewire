@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 def coverage_window(now: datetime | None = None) -> tuple[datetime, datetime]:
-    start = now or datetime.utcnow()
+    start = now or datetime.now(timezone.utc)
     end = start + timedelta(days=7)
     return start, end
 

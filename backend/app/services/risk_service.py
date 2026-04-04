@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.ml.premium_model import model as _ml_model
 from app.schemas.common import LiveRiskFactors
 from app.services.pricing_service import (
+    PLANS,
     actuarial_weekly_premium,
     blend_premium,
     linear_risk_score,
@@ -52,7 +53,7 @@ def quote_premium(
     avg_weekly_income: float = 3500.0,
     city: str = "Bengaluru",
 ) -> float:
-    """Weekly premium: interpretable loss-cost + admin, blended with GBM (Phase 2)."""
+    """Default premium quote (standard plan): 80% actuarial + 20% GBM residual."""
     actuarial = actuarial_weekly_premium(
         rain_risk, flood_risk, aqi_risk, closure_risk,
         shift_exposure, avg_weekly_income, city,
@@ -61,22 +62,28 @@ def quote_premium(
         rain_risk, flood_risk, aqi_risk, closure_risk,
         shift_exposure, avg_weekly_income, city,
     )
-    return blend_premium(actuarial, ml, ml_weight=0.20)
+    std = PLANS["standard"]
+    return blend_premium(
+        actuarial,
+        ml,
+        floor=float(std["min_premium"]),
+        ceiling=float(std["max_premium"]),
+        ml_weight=0.20,
+    )
 
 
 def quote_max_payout(avg_weekly_income: float) -> float:
-    return round(avg_weekly_income * 0.4, 2)
+    return round(avg_weekly_income * float(PLANS["standard"]["coverage_pct"]), 2)
 
 
 def get_risk_explanation(city: str = "Bengaluru") -> dict:
-    """GBM feature importances + narrative (pricing also uses an actuarial loss-cost layer)."""
+    """GBM feature importances + narrative (pricing is tiered actuarial with ML residual)."""
     importances = _ml_model.get_feature_importances()
-    top_factor = max(importances, key=importances.get)  # type: ignore[arg-type]
     explanation = (
-        f"About 80% of your weekly premium comes from an actuarial formula: admin load plus "
-        f"expected loss (max payout × exposure) grossed up for a 65% loss-ratio target, "
-        f"then a 15% margin — with city weights aligned to IMD-style regional rainfall exposure. "
-        f"About 20% is a GBM blend trained on actuarial-anchored scenarios. "
+        f"About 80% of your premium comes from tiered actuarial pricing: "
+        f"max payout for the selected plan × exposure-based risk rate (1.5% to 8.0%), "
+        f"with city baseline weights aligned to IMD-style rainfall exposure. "
+        f"About 20% is a GBM residual blend to capture non-linear interactions. "
         f"The sensitivity chart reflects tree splits on that training set, not live rain %. "
         f"Use the this-quote exposure bars for today's inputs. "
         f"Claims need a verified zone event; news only nudges pricing."
@@ -118,7 +125,7 @@ async def fetch_live_risk_factors(city: str) -> LiveRiskFactors:
     else:
         overall = "low"
 
-    fetched_at = datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    fetched_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
     return LiveRiskFactors(
         city=city,
