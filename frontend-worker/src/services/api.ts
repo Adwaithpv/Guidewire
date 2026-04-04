@@ -24,6 +24,18 @@ export type RiskQuotePayload = {
   shift_exposure: number;
 };
 
+/** Matches backend `EventIngestRequest` (optional `worker_id` for Mock simulator scoping). */
+export type EventIngestPayload = {
+  event_type: string;
+  zone_name: string;
+  started_at: string;
+  ended_at: string;
+  severity?: string;
+  source_name?: string;
+  source_payload?: Record<string, unknown>;
+  worker_id?: number;
+};
+
 async function request(url: string, options?: RequestInit) {
   const res = await fetch(url, options);
   if (!res.ok) {
@@ -107,31 +119,31 @@ export const api = {
     request(`${API_BASE}/shift-guardian/recommendation/${workerId}`),
 
   // Events
-  ingestWeather: (data: any) =>
+  ingestWeather: (data: EventIngestPayload) =>
     request(`${API_BASE}/events/ingest/weather`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
-  ingestAqi: (data: any) =>
+  ingestAqi: (data: EventIngestPayload) =>
     request(`${API_BASE}/events/ingest/aqi`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
-  ingestClosure: (data: any) =>
+  ingestClosure: (data: EventIngestPayload) =>
     request(`${API_BASE}/events/ingest/closure`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
-  ingestPlatformOutage: (data: any) =>
+  ingestPlatformOutage: (data: EventIngestPayload) =>
     request(`${API_BASE}/events/ingest/platform-outage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
-  ingestFlood: (data: any) =>
+  ingestFlood: (data: EventIngestPayload) =>
     request(`${API_BASE}/events/ingest/flood`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

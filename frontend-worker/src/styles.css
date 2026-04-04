@@ -203,12 +203,15 @@ h6 {
   box-shadow: inset 0 -3px 0 var(--accent);
 }
 
-/* Quote page */
-.quote-page {
+/* Quote page — column layout; do not combine with .center-view (row/center fights this) */
+.app-container.quote-page {
+  flex-direction: column;
+  align-items: stretch;
   width: 100%;
-  max-width: 1040px;
-  margin: 0 auto;
+  min-height: 100vh;
   padding: 32px 24px 48px;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 .quote-top-bar {
   display: flex;
@@ -285,9 +288,18 @@ h6 {
   flex-shrink: 0;
   margin-left: auto;
 }
+.quote-model-version {
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: -8px 0 20px;
+}
 .quote-main-grid {
   display: grid;
-  grid-template-columns: 3fr 2fr;
+  grid-template-columns: minmax(0, 3fr) minmax(280px, 2fr);
   gap: 24px;
   align-items: start;
 }
@@ -520,6 +532,10 @@ button.nav-link {
   border-color: var(--border-strong);
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
+}
+.card:has(.data-list):hover,
+.card.claims-card:hover {
+  transform: none;
 }
 
 .shift-guardian-card {
@@ -1013,7 +1029,7 @@ button:disabled {
   background: var(--error);
 }
 
-/* ── Live conditions ─────────────────── */
+/* ── Live conditions (single grid: 2×2 cards + full-width meters + banner) ─── */
 .live-conditions-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

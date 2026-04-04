@@ -285,7 +285,9 @@ function App() {
       }
       setSimulatorLastResult(res);
       if (!res.deduplicated) {
-        setSimPipelineStep(workerId != null ? 0 : null);
+        window.setTimeout(() => {
+          setSimPipelineStep(workerId != null ? 0 : null);
+        }, 100);
       }
       await fetchDashboardData();
     } catch (err) {
@@ -436,7 +438,7 @@ function App() {
           </div>
         </div>
         <footer className="auth-footer">
-          Trusted partners: [Insurance partner] · [Payments partner] · [Wellness partner]
+          Live risk inputs: OpenWeatherMap · WAQI · NewsData.io / GNews (when configured) · IMD-aligned city weights in pricing engine
         </footer>
       </>
     );
@@ -607,7 +609,7 @@ function App() {
             ? "var(--warning)"
             : "var(--error)";
     return (
-      <div className="app-container center-view quote-page">
+      <div className="app-container quote-page">
         <div className="reg-progress" style={{ maxWidth: "640px", width: "100%", margin: "0 auto 28px" }} role="navigation" aria-label="Onboarding steps">
           <div className="reg-step done">Verify</div>
           <div className="reg-step done">Profile</div>
@@ -619,13 +621,14 @@ function App() {
         <p className="subtitle" style={{ marginBottom: "10px", textAlign: "center", maxWidth: "36rem", marginLeft: "auto", marginRight: "auto" }}>
           Actuarial + ML blend · Live factors for {profile?.zone_name}, {profile?.city}
         </p>
-        <p style={{ textAlign: "center", fontSize: "0.85rem", color: "var(--text-dim)", marginBottom: "22px", maxWidth: "40rem", marginLeft: "auto", marginRight: "auto", lineHeight: 1.55 }}>
+        <p style={{ textAlign: "center", fontSize: "0.85rem", color: "var(--text-dim)", marginBottom: "10px", maxWidth: "40rem", marginLeft: "auto", marginRight: "auto", lineHeight: 1.55 }}>
           Premium uses <strong style={{ color: "var(--primary-hover)" }}>live</strong> weather, AQI, and{" "}
           <strong style={{ color: "var(--primary-hover)" }}>news</strong> (bandh / curfew signals) for {profile?.city}
           {quoteLiveFactors?.fetched_at && (
             <> · Updated {new Date(quoteLiveFactors.fetched_at).toLocaleString("en-IN")}</>
           )}
         </p>
+        <p className="quote-model-version">Pricing model · {riskQuote?.model_version || "actuarial-gbm-blend-v1"}</p>
 
         <div className="quote-top-bar" style={{ maxWidth: "1000px", margin: "0 auto 20px", width: "100%" }}>
           <span className={`risk-pill ${riskPillClass}`}>{(plansQuote?.risk_level || "moderate").toUpperCase()}</span>
@@ -1535,7 +1538,7 @@ function App() {
           <p className="subtitle" style={{ fontSize: "0.88rem", marginBottom: "16px" }}>
             Only claims linked to your profile and policies are shown here.
           </p>
-          <div className="card">
+          <div className="card claims-card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
               <h3 style={{ margin: 0 }}>Your claims</h3>
               {claimsSummary && (
