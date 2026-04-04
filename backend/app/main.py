@@ -1,4 +1,5 @@
 import logging
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,9 +14,14 @@ log = logging.getLogger(__name__)
 
 app = FastAPI(title="SurakshaShift AI API", version="0.2.0-phase2")
 
+cors_env = os.getenv("CORS_ORIGINS", "*")
+allow_origins = ["*"] if cors_env.strip() == "*" else [
+    origin.strip() for origin in cors_env.split(",") if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
