@@ -1,9 +1,5 @@
 """
-Shift Guardian: pre-shift zone comparison using live weather, AQI, and news closure signal.
-
-Phase 2: all zones in a city share the same city-level feeds; zone names are compared with
-deterministic micro-variation so the UI can rank alternatives (replace with hyperlocal
-sensors or GIS in production).
+Shift Guardian: pre-shift zone comparison using zone-level weather/AQI/news signals.
 """
 from __future__ import annotations
 
@@ -16,7 +12,7 @@ from typing import Any
 
 from app.services.aqi_service import aqi_to_risk_factor, get_current_aqi
 from app.services.news_service import get_closure_signal_from_news
-from app.services.weather_service import get_current_weather, weather_to_risk_factors
+from app.services.weather_service import _COORDS, _zone_geo_offset, get_current_weather_for_zone, weather_to_risk_factors
 
 _CITY_ZONE_SUGGESTIONS: dict[str, list[str]] = {
     "Bengaluru": ["HSR Layout", "Koramangala", "Indiranagar", "Whitefield", "JP Nagar", "OMR", "Electronic City"],
@@ -107,10 +103,14 @@ def _shift_hours(shift_type: str) -> float:
 
 
 async def _build_zone_snapshot(zone_name: str, city: str, shift_type: str) -> ZoneRiskSnapshot:
+    base_lat, base_lon = _COORDS.get(city, (12.97, 77.59))
+    lat_off, lon_off = _zone_geo_offset(zone_name)
+    lat, lon = base_lat + lat_off, base_lon + lon_off
+
     weather, aqi_data, news = await asyncio.gather(
-        get_current_weather(city),
-        get_current_aqi(city),
-        get_closure_signal_from_news(city),
+        get_current_weather_for_zone(city, zone_name),
+        get_current_aqi(city, lat=lat, lon=lon, zone_name=zone_name),
+        get_closure_signal_from_news(city, locality=zone_name),
     )
     weather_risks = weather_to_risk_factors(weather)
     aqi_risks = aqi_to_risk_factor(aqi_data)
@@ -178,7 +178,7 @@ async def generate_shift_recommendation(
 ) -> ShiftRecommendation:
     _ = worker_id
     roster = _roster_for_city(city, current_zone)
-    candidate_zones = [z for z in roster if z != current_zone][:3]
+    candidate_zones = [z for z in roster if z != current_zone]
     all_zones = [current_zone] + candidate_zones
 
     snapshots = await asyncio.gather(

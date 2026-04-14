@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import os
 import random
+import hashlib
 
 import httpx
 
@@ -44,15 +45,28 @@ def _aqi_category(aqi: int) -> str:
     return "hazardous"
 
 
-async def get_current_aqi(city: str) -> dict:
+def _zone_aqi_bias(zone_name: str) -> int:
+    h = int(hashlib.sha256(zone_name.encode()).hexdigest()[:8], 16)
+    return (h % 35) - 17  # [-17, +17]
+
+
+async def get_current_aqi(city: str, lat: float | None = None, lon: float | None = None, zone_name: str | None = None) -> dict:
     """Fetch current AQI for a city. Falls back to mock if no API token."""
     if not WAQI_TOKEN:
         log.info("No WAQI token — using mock AQI for %s", city)
-        return _mock_aqi(city)
+        out = _mock_aqi(city)
+        if zone_name:
+            out["aqi"] = max(20, int(out["aqi"]) + _zone_aqi_bias(zone_name))
+            out["source"] = "mock-zone"
+            out["zone_name"] = zone_name
+        return out
 
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(f"{WAQI_URL}/{city}/", params={"token": WAQI_TOKEN})
+            if lat is not None and lon is not None:
+                resp = await client.get(f"{WAQI_URL}/geo:{lat:.5f};{lon:.5f}/", params={"token": WAQI_TOKEN})
+            else:
+                resp = await client.get(f"{WAQI_URL}/{city}/", params={"token": WAQI_TOKEN})
             resp.raise_for_status()
             data = resp.json()
 
@@ -63,8 +77,9 @@ async def get_current_aqi(city: str) -> dict:
         aqi_val = int(aqi_data["aqi"])
         dominant = aqi_data.get("dominentpol", "pm25")
         return {
-            "source": "waqi",
+            "source": "waqi-zone" if lat is not None and lon is not None else "waqi",
             "city": city,
+            "zone_name": zone_name,
             "aqi": aqi_val,
             "dominant_pollutant": dominant,
             "category": _aqi_category(aqi_val),

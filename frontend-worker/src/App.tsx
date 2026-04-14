@@ -25,6 +25,7 @@ function App() {
   const [phone, setPhone] = useState("9876543210");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+  const [authNotice, setAuthNotice] = useState<{ type: "success" | "info" | "error"; text: string } | null>(null);
 
   // Form state
   const [formData, setFormData] = useState<WorkerPayload>({
@@ -132,6 +133,18 @@ function App() {
   const handleSendOtp = async () => {
     setLoading(true);
     try {
+      // Fresh auth attempt: clear stale session data so previous worker details don't leak.
+      setWorkerId(null);
+      setProfile(null);
+      setRiskQuote(null);
+      setPlansQuote(null);
+      setPolicies([]);
+      setClaims([]);
+      setClaimsSummary(null);
+      setWorkerProtection(null);
+      setSimulatorLastResult(null);
+      setShiftRec(null);
+      setAuthNotice(null);
       await api.sendOtp(phone);
       setOtpSent(true);
     } catch { /* mock always succeeds */ }
@@ -144,8 +157,19 @@ function App() {
       const res = await api.verifyOtp(phone, otp);
       if (res.status === "verified") {
         setFormData(f => ({ ...f, phone }));
-        setView("register");
+        if (res.existing_user && res.worker_id) {
+          setAuthNotice({ type: "success", text: "Welcome back! We found your account. Signing you in..." });
+          const existingWorkerId = Number(res.worker_id);
+          setWorkerId(existingWorkerId);
+          const p = await api.getProfile(existingWorkerId);
+          setProfile(p);
+          window.setTimeout(() => setView("dashboard"), 700);
+        } else {
+          setAuthNotice({ type: "info", text: "No account found for this number. Let's finish your sign up." });
+          window.setTimeout(() => setView("register"), 700);
+        }
       } else {
+        setAuthNotice({ type: "error", text: "Invalid OTP. Please use 123456." });
         alert("Invalid OTP. Use 123456.");
       }
     } catch { alert("Verification failed"); }
@@ -557,9 +581,27 @@ function App() {
                   </div>
                 </div>
                 {!otpSent ? (
-                  <button onClick={handleSendOtp} disabled={loading || phone.length < 10} style={{ width: "100%" }}>
-                    {loading ? "Sending..." : "Send OTP →"}
-                  </button>
+                  <>
+                    <button onClick={handleSendOtp} disabled={loading || phone.length < 10} style={{ width: "100%" }}>
+                      {loading ? "Sending..." : "Send OTP →"}
+                    </button>
+                    {authNotice && (
+                      <div
+                        style={{
+                          marginTop: "10px",
+                          fontSize: "0.82rem",
+                          color:
+                            authNotice.type === "success"
+                              ? "var(--success)"
+                              : authNotice.type === "error"
+                                ? "var(--error)"
+                                : "var(--text-secondary)",
+                        }}
+                      >
+                        {authNotice.text}
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <>
                     <div className="otp-sent-label">
@@ -581,6 +623,22 @@ function App() {
                     <button onClick={handleVerifyOtp} disabled={loading || otp.length < 6} style={{ width: "100%" }}>
                       {loading ? "Verifying..." : "Verify & Continue →"}
                     </button>
+                    {authNotice && (
+                      <div
+                        style={{
+                          marginTop: "10px",
+                          fontSize: "0.82rem",
+                          color:
+                            authNotice.type === "success"
+                              ? "var(--success)"
+                              : authNotice.type === "error"
+                                ? "var(--error)"
+                                : "var(--text-secondary)",
+                        }}
+                      >
+                        {authNotice.text}
+                      </div>
+                    )}
                   </>
                 )}
               </div>

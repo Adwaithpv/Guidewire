@@ -243,24 +243,39 @@ async def _try_gnews(city: str, geo: list[str]) -> dict[str, Any] | None:
     )
 
 
-async def get_closure_signal_from_news(city: str) -> dict[str, Any]:
+async def get_closure_signal_from_news(city: str, locality: str | None = None) -> dict[str, Any]:
     """
     Return closure_risk in [0,1] and evidence from recent India news for this city/region.
     Order: NewsData.io → GNews → mock.
     """
     geo = _geo_tokens_for_city(city)
+    if locality:
+        # Add locality token to make signal slightly more zone-aware.
+        geo.extend([locality.lower()])
 
     if not NEWSDATA_KEY and not GNEWS_KEY:
         log.info("No NEWSDATA_API_KEY or GNEWS_API_KEY — mock closure for %s", city)
-        return _mock_closure(city)
+        out = _mock_closure(city)
+        if locality:
+            out["source"] = "mock-zone"
+            out["locality"] = locality
+        return out
 
     out = await _try_newsdata(city, geo)
     if out is not None:
+        if locality:
+            out["locality"] = locality
         return out
 
     out = await _try_gnews(city, geo)
     if out is not None:
         log.info("Using GNews closure signal for %s (NewsData unavailable or failed)", city)
+        if locality:
+            out["locality"] = locality
         return out
 
-    return _mock_closure(city)
+    out = _mock_closure(city)
+    if locality:
+        out["source"] = "mock-zone"
+        out["locality"] = locality
+    return out

@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import os
 import random
+import hashlib
 
 import httpx
 
@@ -82,6 +83,69 @@ async def get_current_weather(city: str) -> dict:
     except Exception as exc:
         log.warning("OWM API error for %s: %s — falling back to mock", city, exc)
         return _mock_weather(city)
+
+
+def _zone_geo_offset(zone_name: str) -> tuple[float, float]:
+    """
+    Deterministic micro-offset (about +/-4km range) to query nearby points
+    within the same city for zone-level weather variation.
+    """
+    h = int(hashlib.sha256(zone_name.encode()).hexdigest()[:8], 16)
+    # +/-0.04 degrees roughly ~4.4km lat, ~4km lon around Indian cities
+    lat_off = ((h % 2001) - 1000) / 25000.0
+    lon_off = (((h // 2001) % 2001) - 1000) / 25000.0
+    return lat_off, lon_off
+
+
+async def get_current_weather_for_zone(city: str, zone_name: str) -> dict:
+    """
+    Zone-aware weather snapshot by querying OpenWeatherMap near city center
+    with deterministic zone-level geo offsets.
+    """
+    if not OWM_KEY:
+        w = _mock_weather(city)
+        # keep variation deterministic for repeated runs in the same zone
+        lat_off, lon_off = _zone_geo_offset(zone_name)
+        rain_delta = (lat_off + lon_off) * 25.0
+        w["rain_mm_1h"] = round(max(0.0, float(w.get("rain_mm_1h", 0)) + rain_delta), 1)
+        w["source"] = "mock-zone"
+        w["zone_name"] = zone_name
+        return w
+
+    base_lat, base_lon = _COORDS.get(city, (12.97, 77.59))
+    lat_off, lon_off = _zone_geo_offset(zone_name)
+    lat, lon = base_lat + lat_off, base_lon + lon_off
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(
+                OWM_URL,
+                params={"lat": lat, "lon": lon, "appid": OWM_KEY, "units": "metric"},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+        rain_1h = data.get("rain", {}).get("1h", 0.0)
+        return {
+            "source": "openweathermap-zone",
+            "city": city,
+            "zone_name": zone_name,
+            "temperature_c": round(data["main"]["temp"], 1),
+            "humidity": data["main"]["humidity"],
+            "wind_speed_kmh": round(data["wind"]["speed"] * 3.6, 1),
+            "rain_mm_1h": round(rain_1h, 1),
+            "condition": data["weather"][0]["main"],
+            "description": data["weather"][0]["description"],
+            "lat": round(lat, 5),
+            "lon": round(lon, 5),
+        }
+    except Exception as exc:
+        log.warning(
+            "OWM zone-weather API error for %s/%s: %s — falling back to city weather",
+            city,
+            zone_name,
+            exc,
+        )
+        return await get_current_weather(city)
 
 
 def weather_to_risk_factors(weather: dict) -> dict:
