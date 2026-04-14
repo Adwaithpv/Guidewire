@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.entities import Claim
+from app.models.entities import Claim, FraudCheck, Payout
 from app.schemas.common import ClaimsSummary, ProcessClaimResponse
-from app.services.fraud_service import compute_fraud_score, review_status
+from app.services.fraud_service import evaluate_claim_fraud
 
 router = APIRouter(prefix="/claims", tags=["claims"])
 
@@ -13,8 +13,11 @@ router = APIRouter(prefix="/claims", tags=["claims"])
 @router.get("/{worker_id}")
 def get_claims(worker_id: int, db: Session = Depends(get_db)) -> list[dict]:
     claims = db.scalars(select(Claim).where(Claim.worker_id == worker_id).order_by(Claim.id.desc())).all()
-    return [
-        {
+    result = []
+    for c in claims:
+        fraud = db.scalar(select(FraudCheck).where(FraudCheck.claim_id == c.id))
+        payout = db.scalar(select(Payout).where(Payout.claim_id == c.id))
+        result.append({
             "id": c.id,
             "event_id": c.event_id,
             "claim_type": c.claim_type,
@@ -23,21 +26,30 @@ def get_claims(worker_id: int, db: Session = Depends(get_db)) -> list[dict]:
             "approved_payout": float(c.approved_payout),
             "auto_created": c.auto_created,
             "created_at": c.created_at,
-        }
-        for c in claims
-    ]
+            "fraud_score": round(fraud.final_fraud_score, 3) if fraud else None,
+            "fraud_status": fraud.review_status if fraud else None,
+            "payout_status": payout.status if payout else None,
+            "payout_ref": payout.gateway_ref if payout else None,
+            "payout_amount": float(payout.amount) if payout else None,
+        })
+    return result
 
 
 @router.get("/summary/{worker_id}", response_model=ClaimsSummary)
 def claims_summary(worker_id: int, db: Session = Depends(get_db)) -> ClaimsSummary:
     claims = db.scalars(select(Claim).where(Claim.worker_id == worker_id)).all()
-    approved = [c for c in claims if c.status == "approved"]
+    approved = [c for c in claims if c.status in ("approved", "paid")]
     pending = [c for c in claims if c.status in ("validation_pending", "fraud_check")]
+    total_paid = 0.0
+    for c in approved:
+        p = db.scalar(select(Payout).where(Payout.claim_id == c.id, Payout.status == "success"))
+        if p:
+            total_paid += float(p.amount)
     return ClaimsSummary(
         worker_id=worker_id,
         total_claims=len(claims),
         approved_claims=len(approved),
-        total_payout=round(sum(float(c.approved_payout) for c in approved), 2),
+        total_payout=round(total_paid if total_paid > 0 else sum(float(c.approved_payout) for c in approved), 2),
         pending_claims=len(pending),
     )
 
@@ -58,12 +70,6 @@ def process_claim(claim_id: int, db: Session = Depends(get_db)) -> ProcessClaimR
     if claim is None:
         raise HTTPException(status_code=404, detail="Claim not found")
 
-    duplicate_risk = 1.0 if claim.status == "duplicate_rejected" else 0.0
-    fraud_score = compute_fraud_score(
-        gps_mismatch=0.1, duplicate_risk=duplicate_risk, activity_absence=0.05, anomaly_pattern=0.02, source_conflict=0.05
-    )
-    status = review_status(fraud_score)
-    claim.status = "approved" if status != "manual_review" else "fraud_check"
-    db.commit()
+    result = evaluate_claim_fraud(db, claim_id)
     db.refresh(claim)
     return ProcessClaimResponse(claim_id=claim.id, status=claim.status, approved_payout=float(claim.approved_payout))

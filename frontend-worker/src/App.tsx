@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { api, WorkerPayload } from "./services/api";
 
-type View = "landing" | "otp" | "register" | "quote" | "dashboard";
+type View = "landing" | "otp" | "register" | "quote" | "dashboard" | "admin";
 
 type DashboardSection = "home" | "policy" | "claims" | "live";
+type AdminSection = "overview" | "claims" | "fraud" | "predictions" | "payouts";
 
 function App() {
   const [view, setView] = useState<View>("landing");
@@ -47,18 +48,30 @@ function App() {
   const [shiftRec, setShiftRec] = useState<any>(null);
   const [shiftRecLoading, setShiftRecLoading] = useState(false);
 
+  // Phase 3 state
+  const [workerProtection, setWorkerProtection] = useState<any>(null);
+  const [adminSection, setAdminSection] = useState<AdminSection>("overview");
+  const [adminKpis, setAdminKpis] = useState<any>(null);
+  const [adminFraud, setAdminFraud] = useState<any>(null);
+  const [adminPredictions, setAdminPredictions] = useState<any>(null);
+  const [adminClaimsByTrigger, setAdminClaimsByTrigger] = useState<any[]>([]);
+  const [adminPayoutsLedger, setAdminPayoutsLedger] = useState<any[]>([]);
+  const [adminLoading, setAdminLoading] = useState(false);
+
   // Dashboard data refresh
   const fetchDashboardData = useCallback(async () => {
     if (!workerId) return;
     try {
-      const [p, c, s] = await Promise.all([
+      const [p, c, s, wp] = await Promise.all([
         api.getPolicies(workerId),
         api.getClaims(workerId),
         api.getClaimsSummary(workerId),
+        api.getWorkerProtection(workerId),
       ]);
       setPolicies(p);
       setClaims(c);
       setClaimsSummary(s);
+      setWorkerProtection(wp);
     } catch (e) {
       console.error(e);
     }
@@ -308,7 +321,36 @@ function App() {
     curfew: "🚧", platform_outage: "📡", parametric_income_loss: "📋",
   };
   const statusColor = (s: string) =>
-    s === "approved" ? "success" : s === "fraud_check" ? "pending" : "";
+    s === "paid" ? "success" : s === "approved" ? "success" : s === "fraud_check" ? "pending" : "";
+
+  const fetchAdminData = useCallback(async () => {
+    setAdminLoading(true);
+    try {
+      const city = profile?.city || "Bengaluru";
+      const [kpi, fraud, pred, triggers, ledger] = await Promise.all([
+        api.getAnalyticsKpis(),
+        api.getFraudOverview(),
+        api.getPredictions(city),
+        api.getClaimsByTrigger(),
+        api.getPayoutsLedger(),
+      ]);
+      setAdminKpis(kpi);
+      setAdminFraud(fraud);
+      setAdminPredictions(pred);
+      setAdminClaimsByTrigger(triggers);
+      setAdminPayoutsLedger(ledger);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setAdminLoading(false);
+    }
+  }, [profile?.city]);
+
+  useEffect(() => {
+    if (view === "admin") {
+      fetchAdminData();
+    }
+  }, [view, fetchAdminData]);
 
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -349,9 +391,14 @@ function App() {
             </svg>
             <span className="landing-brand-text">SurakshaShift</span>
           </div>
-          <button type="button" className="landing-signin" onClick={() => setView("otp")}>
-            Sign in
-          </button>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <button type="button" className="landing-signin" style={{ opacity: 0.7, fontSize: "0.82rem" }} onClick={() => { setView("admin"); fetchAdminData(); }}>
+              Admin Portal
+            </button>
+            <button type="button" className="landing-signin" onClick={() => setView("otp")}>
+              Sign in
+            </button>
+          </div>
         </header>
 
         <main className="landing-main">
@@ -989,7 +1036,7 @@ function App() {
   // ═══════════════════════════════════════════════════════════════
   const activePolicy = policies.find((p: any) => p.status === "active") || policies[0];
 
-  return (
+  if (view === "dashboard") return (
     <div className="app-container">
       {/* Sidebar */}
       <aside className="sidebar">
@@ -1034,6 +1081,14 @@ function App() {
             🌦️ Live Conditions
           </button>
         </nav>
+        <button
+          type="button"
+          className="nav-link"
+          style={{ marginTop: "8px", fontSize: "0.82rem", opacity: 0.7 }}
+          onClick={() => { setView("admin"); fetchAdminData(); }}
+        >
+          🏢 Admin Portal
+        </button>
         <div className={`worker-status ${activePolicy ? 'active' : ''}`}>
           <div style={{ fontWeight: 600, marginBottom: "4px" }}>{profile?.name}</div>
           <div style={{ fontSize: "0.8rem", color: "var(--text-dim)", marginBottom: "6px" }}>{profile?.platform_name} • {profile?.zone_name}</div>
@@ -1081,29 +1136,85 @@ function App() {
               <span className="stat-value" style={{ color: "var(--success)" }}>
                 ₹{activePolicy?.max_weekly_payout || "0"}
               </span>
-              <span className="stat-sub">Up to 40% of avg income</span>
+              <span className="stat-sub">Up to {activePolicy?.plan_name === "weekly-full" ? "50" : activePolicy?.plan_name === "weekly-basic" ? "20" : "35"}% of avg income</span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-decorator" aria-hidden>
+                💰
+              </span>
+              <span className="stat-label">Earnings Protected</span>
+              <span className="stat-value" style={{ color: "var(--success)" }}>
+                ₹{workerProtection?.earnings_protected?.toFixed(0) || "0"}
+              </span>
+              <span className="stat-sub">
+                {(workerProtection?.net_benefit ?? 0) >= 0
+                  ? `+₹${(workerProtection?.net_benefit ?? 0).toFixed(0)} net benefit`
+                  : `₹${Math.abs(workerProtection?.net_benefit ?? 0).toFixed(0)} paid in premiums`}
+              </span>
             </div>
             <div className="stat-card">
               <span className="stat-decorator" aria-hidden>
                 📋
               </span>
-              <span className="stat-label">Total Claimed</span>
+              <span className="stat-label">Claims</span>
               <span className="stat-value" style={{ color: "var(--secondary)" }}>
-                ₹{claimsSummary?.total_payout?.toFixed(0) || "0"}
+                {claimsSummary?.approved_claims || 0}
               </span>
-              <span className="stat-sub">{claimsSummary?.total_claims || 0} claims filed</span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-decorator" aria-hidden>
-                📈
-              </span>
-              <span className="stat-label">Risk Score</span>
-              <span className="stat-value" style={{ color: "var(--primary)" }}>
-                {((profile?.risk_score || 0) * 100).toFixed(0)}
-              </span>
-              <span className="stat-sub">Risk engine v1</span>
+              <span className="stat-sub">{claimsSummary?.total_claims || 0} filed · ₹{claimsSummary?.total_payout?.toFixed(0) || "0"} paid out</span>
             </div>
           </div>
+
+          {workerProtection?.active_coverage?.has_active && (
+            <div className="card" style={{ marginTop: "20px", padding: "20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                <h3 style={{ margin: 0, fontSize: "1rem" }}>Active Weekly Coverage</h3>
+                <span className="badge success" style={{ fontSize: "0.75rem" }}>
+                  {workerProtection.active_coverage.days_remaining} days left
+                </span>
+              </div>
+              <div style={{ background: "var(--surface-raised)", borderRadius: "8px", height: "10px", overflow: "hidden" }}>
+                <div
+                  style={{
+                    height: "100%",
+                    borderRadius: "8px",
+                    background: "linear-gradient(90deg, var(--success), var(--primary))",
+                    width: `${(workerProtection.active_coverage.coverage_progress_pct || 0) * 100}%`,
+                    transition: "width 0.5s ease",
+                  }}
+                />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: "8px", fontSize: "0.78rem", color: "var(--text-dim)" }}>
+                <span>Premium: ₹{workerProtection.active_coverage.premium_weekly}/wk</span>
+                <span>Max payout: ₹{workerProtection.active_coverage.max_weekly_payout}/wk</span>
+              </div>
+            </div>
+          )}
+
+          {workerProtection?.payout_history?.length > 0 && (
+            <div className="card" style={{ marginTop: "20px", padding: "20px" }}>
+              <h3 style={{ margin: "0 0 14px", fontSize: "1rem" }}>Recent Payouts (UPI)</h3>
+              <div className="data-list" style={{ marginTop: 0, maxHeight: "240px", overflowY: "auto" }}>
+                {workerProtection.payout_history.slice(0, 8).map((p: any) => (
+                  <div className="data-item" key={p.id}>
+                    <div className="item-main">
+                      <span className="item-title" style={{ fontFamily: "monospace", fontSize: "0.82rem" }}>
+                        {p.status === "success" ? "✅" : "❌"} {p.gateway_ref}
+                      </span>
+                      <span className="item-meta">
+                        {p.completed_at ? formatTime(p.completed_at) : "Processing..."}
+                        <span className={`badge ${p.status === "success" ? "success" : "pending"}`} style={{ marginLeft: "8px", zoom: 0.8 }}>
+                          {p.status === "success" ? "PAID" : p.status.toUpperCase()}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="item-amount" style={{ color: p.status === "success" ? "var(--success)" : "var(--text-muted)" }}>
+                      ₹{p.amount}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="card shift-guardian-card" style={{ marginTop: "28px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
@@ -1672,15 +1783,27 @@ function App() {
                       <span className="item-meta">
                         {formatTime(claim.created_at)}
                         <span className={`badge ${statusColor(claim.status)}`} style={{ marginLeft: "8px", zoom: 0.8 }}>
-                          {claim.status.replace("_", " ").toUpperCase()}
+                          {claim.status === "paid" ? "PAID" : claim.status.replace("_", " ").toUpperCase()}
                         </span>
+                        {claim.fraud_score != null && (
+                          <span className={`badge ${claim.fraud_score > 0.5 ? "pending" : ""}`} style={{ marginLeft: "4px", zoom: 0.75, opacity: 0.8 }}>
+                            Fraud: {(claim.fraud_score * 100).toFixed(0)}%
+                          </span>
+                        )}
                       </span>
                     </div>
-                    <div
-                      className="item-amount"
-                      style={{ color: claim.status === "approved" ? "var(--success)" : "var(--text-muted)" }}
-                    >
-                      ₹ {claim.approved_payout}
+                    <div style={{ textAlign: "right" }}>
+                      <div
+                        className="item-amount"
+                        style={{ color: claim.status === "paid" || claim.status === "approved" ? "var(--success)" : "var(--text-muted)" }}
+                      >
+                        ₹{claim.approved_payout}
+                      </div>
+                      {claim.payout_ref && (
+                        <div style={{ fontSize: "0.7rem", color: "var(--text-dim)", fontFamily: "monospace", marginTop: "2px" }}>
+                          {claim.payout_ref}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1691,6 +1814,382 @@ function App() {
       </main>
     </div>
   );
+
+  // ═══════════════════════════════════════════════════════════════
+  //  VIEW: ADMIN / INSURER DASHBOARD
+  // ═══════════════════════════════════════════════════════════════
+  if (view === "admin") {
+    const kpi = adminKpis;
+    const lossRatioColor = (kpi?.loss_ratio ?? 0) > 1 ? "var(--error)" : (kpi?.loss_ratio ?? 0) > 0.7 ? "var(--warning)" : "var(--success)";
+    const trendIcon = (t: string) => t === "rising" ? "📈" : t === "stable" ? "➡️" : "📉";
+
+    return (
+      <div className="app-container">
+        <aside className="sidebar">
+          <div className="sidebar-logo">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+              <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z" fill="hsl(22, 95%, 55%)" stroke="hsl(22, 95%, 48%)" strokeWidth="1.2" />
+            </svg>
+            <span>SurakshaShift</span>
+          </div>
+          <div style={{ fontSize: "0.72rem", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, padding: "0 16px", marginBottom: "8px" }}>
+            Insurer Admin
+          </div>
+          <nav className="nav">
+            {([
+              { id: "overview" as AdminSection, label: "📊 Overview" },
+              { id: "claims" as AdminSection, label: "📋 Claims" },
+              { id: "fraud" as AdminSection, label: "🛡️ Fraud Detection" },
+              { id: "predictions" as AdminSection, label: "🔮 Predictions" },
+              { id: "payouts" as AdminSection, label: "💸 Payouts" },
+            ]).map(item => (
+              <button key={item.id} type="button" className={`nav-link ${adminSection === item.id ? "active" : ""}`} onClick={() => setAdminSection(item.id)}>
+                {item.label}
+              </button>
+            ))}
+          </nav>
+          <button
+            type="button"
+            className="nav-link"
+            style={{ marginTop: "16px", fontSize: "0.82rem", opacity: 0.7 }}
+            onClick={() => setView(workerId ? "dashboard" : "landing")}
+          >
+            ← Back to {workerId ? "Dashboard" : "Home"}
+          </button>
+        </aside>
+
+        <main className="main-content" style={{ padding: "40px" }}>
+          {adminLoading && !kpi && !adminFraud ? (
+            <div style={{ textAlign: "center", padding: "80px 0", color: "var(--text-dim)" }}>Loading admin data...</div>
+          ) : (
+            <>
+              {adminSection === "overview" && kpi && (
+                <section>
+                  <h1 style={{ fontSize: "2rem", marginBottom: "6px" }}>Insurer Dashboard</h1>
+                  <p className="subtitle" style={{ marginBottom: "28px" }}>Real-time KPIs, loss ratios, and platform health</p>
+
+                  <div className="grid four" style={{ marginBottom: "28px" }}>
+                    <div className="stat-card">
+                      <span className="stat-decorator" aria-hidden>👥</span>
+                      <span className="stat-label">Active Workers</span>
+                      <span className="stat-value">{kpi.active_workers}</span>
+                      <span className="stat-sub">{kpi.active_policies} active policies</span>
+                    </div>
+                    <div className="stat-card">
+                      <span className="stat-decorator" aria-hidden>₹</span>
+                      <span className="stat-label">Premiums Collected</span>
+                      <span className="stat-value">₹{kpi.premium_collected}</span>
+                      <span className="stat-sub">Weekly premiums</span>
+                    </div>
+                    <div className="stat-card">
+                      <span className="stat-decorator" aria-hidden>💸</span>
+                      <span className="stat-label">Total Payouts</span>
+                      <span className="stat-value" style={{ color: "var(--accent)" }}>₹{kpi.total_payouts}</span>
+                      <span className="stat-sub">{kpi.approved_claims} claims paid</span>
+                    </div>
+                    <div className="stat-card">
+                      <span className="stat-decorator" aria-hidden>📊</span>
+                      <span className="stat-label">Loss Ratio</span>
+                      <span className="stat-value" style={{ color: lossRatioColor }}>
+                        {(kpi.loss_ratio * 100).toFixed(1)}%
+                      </span>
+                      <span className="stat-sub">{kpi.loss_ratio < 0.7 ? "Healthy" : kpi.loss_ratio < 1 ? "Watch" : "Unsustainable"}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                    <div className="card" style={{ padding: "24px" }}>
+                      <h3 style={{ marginBottom: "16px" }}>Claims Breakdown</h3>
+                      <div className="grid two" style={{ gap: "12px" }}>
+                        <div>
+                          <span className="stat-label">Total Claims</span>
+                          <div style={{ fontSize: "1.5rem", fontWeight: 700 }}>{kpi.total_claims}</div>
+                        </div>
+                        <div>
+                          <span className="stat-label">Avg Claim Value</span>
+                          <div style={{ fontSize: "1.5rem", fontWeight: 700 }}>₹{kpi.avg_claim_value}</div>
+                        </div>
+                        <div>
+                          <span className="stat-label">Approved</span>
+                          <div style={{ fontSize: "1.2rem", fontWeight: 600, color: "var(--success)" }}>{kpi.approved_claims}</div>
+                        </div>
+                        <div>
+                          <span className="stat-label">Pending</span>
+                          <div style={{ fontSize: "1.2rem", fontWeight: 600, color: "var(--warning)" }}>{kpi.pending_claims}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="card" style={{ padding: "24px" }}>
+                      <h3 style={{ marginBottom: "16px" }}>Fraud Detection</h3>
+                      <div className="grid two" style={{ gap: "12px" }}>
+                        <div>
+                          <span className="stat-label">Auto-approved</span>
+                          <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--success)" }}>{kpi.auto_approved}</div>
+                        </div>
+                        <div>
+                          <span className="stat-label">Flagged for Review</span>
+                          <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--error)" }}>{kpi.fraud_flagged}</div>
+                        </div>
+                        <div>
+                          <span className="stat-label">Soft Review</span>
+                          <div style={{ fontSize: "1.2rem", fontWeight: 600, color: "var(--warning)" }}>{kpi.soft_review}</div>
+                        </div>
+                        <div>
+                          <span className="stat-label">Avg Fraud Score</span>
+                          <div style={{ fontSize: "1.2rem", fontWeight: 600 }}>{adminFraud ? (adminFraud.avg_fraud_score * 100).toFixed(1) + "%" : "—"}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {adminSection === "claims" && adminClaimsByTrigger && (
+                <section>
+                  <h2 style={{ fontSize: "1.5rem", marginBottom: "20px" }}>Claims by Trigger Type</h2>
+                  <div className="card" style={{ padding: "24px" }}>
+                    {adminClaimsByTrigger.length === 0 ? (
+                      <div className="empty-state">
+                        <div className="empty-icon">📋</div>
+                        <div>No claims data yet</div>
+                      </div>
+                    ) : (
+                      <div className="data-list">
+                        {adminClaimsByTrigger.map((row: any) => {
+                          const maxCount = Math.max(...adminClaimsByTrigger.map((r: any) => r.count), 1);
+                          return (
+                            <div className="data-item" key={row.event_type} style={{ alignItems: "center" }}>
+                              <div className="item-main" style={{ flex: 1 }}>
+                                <span className="item-title">
+                                  {eventIcon[row.event_type] || "📋"} {String(row.event_type || "").replace(/_/g, " ")}
+                                </span>
+                                <div style={{ background: "var(--surface-raised)", borderRadius: "6px", height: "8px", marginTop: "6px", overflow: "hidden" }}>
+                                  <div style={{ height: "100%", borderRadius: "6px", background: "var(--primary)", width: `${(row.count / maxCount) * 100}%` }} />
+                                </div>
+                              </div>
+                              <div className="item-amount">{row.count}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {adminSection === "fraud" && !adminFraud && (
+                <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-dim)" }}>Loading fraud data...</div>
+              )}
+
+              {adminSection === "fraud" && adminFraud && (
+                <section>
+                  <h2 style={{ fontSize: "1.5rem", marginBottom: "6px" }}>Advanced Fraud Detection</h2>
+                  <p className="subtitle" style={{ marginBottom: "20px" }}>GPS spoofing, weather cross-reference, velocity checks, and anomaly scoring</p>
+
+                  <div className="grid four" style={{ marginBottom: "24px" }}>
+                    <div className="stat-card">
+                      <span className="stat-label">Total Checks</span>
+                      <span className="stat-value">{adminFraud.total_checks}</span>
+                    </div>
+                    <div className="stat-card">
+                      <span className="stat-label">Avg Fraud Score</span>
+                      <span className="stat-value">{(adminFraud.avg_fraud_score * 100).toFixed(1)}%</span>
+                    </div>
+                    <div className="stat-card">
+                      <span className="stat-label">Auto-approved</span>
+                      <span className="stat-value" style={{ color: "var(--success)" }}>{adminFraud.by_status?.auto_approve || 0}</span>
+                    </div>
+                    <div className="stat-card">
+                      <span className="stat-label">Manual Review</span>
+                      <span className="stat-value" style={{ color: "var(--error)" }}>{adminFraud.by_status?.manual_review || 0}</span>
+                    </div>
+                  </div>
+
+                  {adminFraud.high_risk_claims?.length > 0 && (
+                    <div className="card" style={{ padding: "24px" }}>
+                      <h3 style={{ marginBottom: "16px" }}>High-Risk Claims (score &gt; 50%)</h3>
+                      <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.84rem" }}>
+                          <thead>
+                            <tr style={{ borderBottom: "2px solid var(--border)" }}>
+                              <th style={{ textAlign: "left", padding: "8px 12px", color: "var(--text-dim)", fontWeight: 600 }}>Claim</th>
+                              <th style={{ textAlign: "center", padding: "8px 6px", color: "var(--text-dim)", fontWeight: 600 }}>Score</th>
+                              <th style={{ textAlign: "center", padding: "8px 6px", color: "var(--text-dim)", fontWeight: 600 }}>GPS</th>
+                              <th style={{ textAlign: "center", padding: "8px 6px", color: "var(--text-dim)", fontWeight: 600 }}>Dup/Vel</th>
+                              <th style={{ textAlign: "center", padding: "8px 6px", color: "var(--text-dim)", fontWeight: 600 }}>Activity</th>
+                              <th style={{ textAlign: "center", padding: "8px 6px", color: "var(--text-dim)", fontWeight: 600 }}>Anomaly</th>
+                              <th style={{ textAlign: "center", padding: "8px 6px", color: "var(--text-dim)", fontWeight: 600 }}>Source</th>
+                              <th style={{ textAlign: "center", padding: "8px 6px", color: "var(--text-dim)", fontWeight: 600 }}>Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {adminFraud.high_risk_claims.map((fc: any) => (
+                              <tr key={fc.claim_id} style={{ borderBottom: "1px solid var(--border)" }}>
+                                <td style={{ padding: "8px 12px", fontWeight: 600 }}>#{fc.claim_id}</td>
+                                <td style={{ textAlign: "center", padding: "8px 6px", fontWeight: 700, color: fc.fraud_score > 0.7 ? "var(--error)" : "var(--warning)" }}>{(fc.fraud_score * 100).toFixed(0)}%</td>
+                                <td style={{ textAlign: "center", padding: "8px 6px" }}>{(fc.gps_score * 100).toFixed(0)}%</td>
+                                <td style={{ textAlign: "center", padding: "8px 6px" }}>{(fc.duplicate_score * 100).toFixed(0)}%</td>
+                                <td style={{ textAlign: "center", padding: "8px 6px" }}>{(fc.activity_score * 100).toFixed(0)}%</td>
+                                <td style={{ textAlign: "center", padding: "8px 6px" }}>{(fc.anomaly_score * 100).toFixed(0)}%</td>
+                                <td style={{ textAlign: "center", padding: "8px 6px" }}>{(fc.source_score * 100).toFixed(0)}%</td>
+                                <td style={{ textAlign: "center", padding: "8px 6px" }}>
+                                  <span className={`badge ${fc.review_status === "manual_review" ? "pending" : "success"}`} style={{ zoom: 0.85 }}>
+                                    {fc.review_status.replace("_", " ")}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="card" style={{ padding: "24px", marginTop: "20px" }}>
+                    <h3 style={{ marginBottom: "12px" }}>Fraud Signals Explained</h3>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", fontSize: "0.85rem" }}>
+                      {[
+                        { name: "GPS Spoofing", desc: "Worker's registered zone vs event zone + GPS enabled status", weight: "20%" },
+                        { name: "Weather Cross-ref", desc: "Claimed disruption verified against live/historical weather data", weight: "20%" },
+                        { name: "Duplicate / Velocity", desc: "Too many claims in a short window from same worker", weight: "20%" },
+                        { name: "Activity Absence", desc: "Claims during hours when the worker is unlikely to be on shift", weight: "15%" },
+                        { name: "Anomaly Payout", desc: "Payout amount disproportionate to weekly income", weight: "15%" },
+                        { name: "Source Conflict", desc: "Event from unverified or mock sources", weight: "10%" },
+                      ].map(s => (
+                        <div key={s.name} style={{ padding: "14px", background: "var(--surface-raised)", borderRadius: "10px" }}>
+                          <div style={{ fontWeight: 700, marginBottom: "4px" }}>{s.name} <span style={{ color: "var(--text-dim)", fontWeight: 400 }}>({s.weight})</span></div>
+                          <div style={{ color: "var(--text-secondary)", fontSize: "0.82rem" }}>{s.desc}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {adminSection === "claims" && !adminClaimsByTrigger && (
+                <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-dim)" }}>Loading claims data...</div>
+              )}
+
+              {adminSection === "predictions" && !adminPredictions && (
+                <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-dim)" }}>Loading predictions...</div>
+              )}
+
+              {adminSection === "predictions" && adminPredictions && (
+                <section>
+                  <h2 style={{ fontSize: "1.5rem", marginBottom: "6px" }}>Predictive Analytics — {adminPredictions.city}</h2>
+                  <p className="subtitle" style={{ marginBottom: "20px" }}>{adminPredictions.forecast_window} · Based on last 4 weeks of event data</p>
+
+                  <div className="grid four" style={{ marginBottom: "24px" }}>
+                    <div className="stat-card">
+                      <span className="stat-label">Events (4 weeks)</span>
+                      <span className="stat-value">{adminPredictions.summary.total_events_4w}</span>
+                    </div>
+                    <div className="stat-card">
+                      <span className="stat-label">Claims (4 weeks)</span>
+                      <span className="stat-value">{adminPredictions.summary.total_claims_4w}</span>
+                    </div>
+                    <div className="stat-card">
+                      <span className="stat-label">Payouts (4 weeks)</span>
+                      <span className="stat-value">₹{adminPredictions.summary.total_payouts_4w}</span>
+                    </div>
+                    <div className="stat-card">
+                      <span className="stat-label">Projected Weekly</span>
+                      <span className="stat-value" style={{ color: "var(--accent)" }}>₹{adminPredictions.summary.projected_weekly_payout}</span>
+                    </div>
+                  </div>
+
+                  <div className="card" style={{ padding: "24px" }}>
+                    <h3 style={{ marginBottom: "16px" }}>Next Week Disruption Forecast</h3>
+                    <div className="data-list">
+                      {adminPredictions.disruption_forecasts.map((f: any) => (
+                        <div className="data-item" key={f.event_type} style={{ alignItems: "center" }}>
+                          <div className="item-main" style={{ flex: 1 }}>
+                            <span className="item-title">
+                              {eventIcon[f.event_type] || "📋"} {f.label}
+                              <span style={{ marginLeft: "8px", fontSize: "0.75rem" }}>{trendIcon(f.risk_trend)} {f.risk_trend}</span>
+                            </span>
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "6px" }}>
+                              <div style={{ flex: 1, background: "var(--surface-raised)", borderRadius: "6px", height: "8px", overflow: "hidden" }}>
+                                <div style={{
+                                  height: "100%", borderRadius: "6px",
+                                  background: f.next_week_probability > 0.6 ? "var(--error)" : f.next_week_probability > 0.3 ? "var(--warning)" : "var(--success)",
+                                  width: `${f.next_week_probability * 100}%`,
+                                }} />
+                              </div>
+                              <span style={{ fontSize: "0.82rem", fontWeight: 700, minWidth: "40px" }}>{(f.next_week_probability * 100).toFixed(0)}%</span>
+                            </div>
+                            <div style={{ fontSize: "0.78rem", color: "var(--text-dim)", marginTop: "4px" }}>
+                              {f.last_4_weeks_count} events in 4 wks · ~{f.expected_claims} expected claims
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {adminSection === "payouts" && (
+                <section>
+                  <h2 style={{ fontSize: "1.5rem", marginBottom: "6px" }}>Payout Ledger</h2>
+                  <p className="subtitle" style={{ marginBottom: "20px" }}>Razorpay test-mode transactions — all UPI payouts to workers</p>
+
+                  <div className="card" style={{ padding: "24px" }}>
+                    {adminPayoutsLedger.length === 0 ? (
+                      <div className="empty-state">
+                        <div className="empty-icon">💸</div>
+                        <div>No payouts yet</div>
+                        <p style={{ fontSize: "0.85rem", color: "var(--text-dim)", marginTop: "8px" }}>Payouts are auto-initiated when claims are approved</p>
+                      </div>
+                    ) : (
+                      <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.84rem" }}>
+                          <thead>
+                            <tr style={{ borderBottom: "2px solid var(--border)" }}>
+                              <th style={{ textAlign: "left", padding: "8px 12px", color: "var(--text-dim)", fontWeight: 600 }}>ID</th>
+                              <th style={{ textAlign: "left", padding: "8px 12px", color: "var(--text-dim)", fontWeight: 600 }}>Worker</th>
+                              <th style={{ textAlign: "right", padding: "8px 12px", color: "var(--text-dim)", fontWeight: 600 }}>Amount</th>
+                              <th style={{ textAlign: "center", padding: "8px 12px", color: "var(--text-dim)", fontWeight: 600 }}>Method</th>
+                              <th style={{ textAlign: "center", padding: "8px 12px", color: "var(--text-dim)", fontWeight: 600 }}>Status</th>
+                              <th style={{ textAlign: "left", padding: "8px 12px", color: "var(--text-dim)", fontWeight: 600 }}>Gateway Ref</th>
+                              <th style={{ textAlign: "left", padding: "8px 12px", color: "var(--text-dim)", fontWeight: 600 }}>Time</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {adminPayoutsLedger.map((p: any) => (
+                              <tr key={p.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                                <td style={{ padding: "8px 12px", fontWeight: 600 }}>#{p.id}</td>
+                                <td style={{ padding: "8px 12px" }}>{p.worker_name || `Worker #${p.worker_id}`}</td>
+                                <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 700, color: "var(--success)" }}>₹{p.amount}</td>
+                                <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                                  <span className="badge" style={{ zoom: 0.85 }}>UPI</span>
+                                </td>
+                                <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                                  <span className={`badge ${p.status === "success" ? "success" : "pending"}`} style={{ zoom: 0.85 }}>
+                                    {p.status === "success" ? "PAID" : p.status.toUpperCase()}
+                                  </span>
+                                </td>
+                                <td style={{ padding: "8px 12px", fontFamily: "monospace", fontSize: "0.78rem" }}>{p.gateway_ref}</td>
+                                <td style={{ padding: "8px 12px", fontSize: "0.78rem", color: "var(--text-dim)" }}>
+                                  {p.completed_at ? formatTime(p.completed_at) : p.initiated_at ? formatTime(p.initiated_at) : "—"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+            </>
+          )}
+        </main>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 export default App;

@@ -24,7 +24,6 @@ export type RiskQuotePayload = {
   shift_exposure: number;
 };
 
-/** Matches backend `EventIngestRequest` (optional `worker_id` for Mock simulator scoping). */
 export type EventIngestPayload = {
   event_type: string;
   zone_name: string;
@@ -77,7 +76,6 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
-  /** Live weather + AQI → ML weekly premium in one call (preferred for onboarding). */
   getRiskQuoteLive: (workerId: number) =>
     request(`${API_BASE}/risk/quote-live`, {
       method: "POST",
@@ -115,6 +113,7 @@ export const api = {
   processClaim: (claimId: number) =>
     request(`${API_BASE}/claims/process/${claimId}`, { method: "POST" }),
 
+  // Shift Guardian
   getShiftRecommendation: (workerId: number) =>
     request(`${API_BASE}/shift-guardian/recommendation/${workerId}`),
 
@@ -151,4 +150,32 @@ export const api = {
     }),
   checkLiveEvents: (city: string) =>
     request(`${API_BASE}/events/check-live/${encodeURIComponent(city)}`),
+
+  // Phase 3: Payouts
+  getPayouts: (workerId: number) =>
+    request(`${API_BASE}/payouts/${workerId}`),
+  initiatePayout: (claimId: number) =>
+    request(`${API_BASE}/payouts/initiate/${claimId}`, { method: "POST" }),
+
+  // Phase 3: Fraud
+  evaluateFraud: (claimId: number) =>
+    request(`${API_BASE}/fraud/evaluate/${claimId}`, { method: "POST" }),
+  getFraudFlags: () =>
+    request(`${API_BASE}/fraud/flags`),
+
+  // Phase 3: Analytics / Admin
+  getAnalyticsKpis: () =>
+    request(`${API_BASE}/analytics/kpis`),
+  getZoneHeatmap: () =>
+    request(`${API_BASE}/analytics/zone-heatmap`),
+  getClaimsByTrigger: () =>
+    request(`${API_BASE}/analytics/claims-by-trigger`),
+  getFraudOverview: () =>
+    request(`${API_BASE}/analytics/fraud-overview`),
+  getPredictions: (city: string) =>
+    request(`${API_BASE}/analytics/predictions?city=${encodeURIComponent(city)}`),
+  getWorkerProtection: (workerId: number) =>
+    request(`${API_BASE}/analytics/worker-protection/${workerId}`),
+  getPayoutsLedger: () =>
+    request(`${API_BASE}/analytics/payouts-ledger`),
 };

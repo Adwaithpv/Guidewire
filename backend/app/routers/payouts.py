@@ -1,3 +1,6 @@
+"""
+Phase 3 instant payout router — Razorpay test-mode style.
+"""
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -5,8 +8,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.entities import Claim, Payout
-from app.services.payout_service import mock_gateway_transfer
+from app.models.entities import Claim, Payout, WorkerProfile
+from app.services.payout_service import mock_razorpay_transfer
 
 router = APIRouter(prefix="/payouts", tags=["payouts"])
 
@@ -19,23 +22,41 @@ def initiate_payout(claim_id: int, db: Session = Depends(get_db)) -> dict:
     if claim.status not in {"approved", "payout_processing", "paid"}:
         raise HTTPException(status_code=400, detail="Claim is not approved for payout")
 
+    worker = db.scalar(select(WorkerProfile).where(WorkerProfile.id == claim.worker_id))
+    worker_upi = worker.payout_upi if worker else ""
+    worker_name = ""
+    if worker and worker.user:
+        worker_name = worker.user.name
+
+    gateway = mock_razorpay_transfer(
+        amount=float(claim.approved_payout),
+        worker_upi=worker_upi,
+        worker_name=worker_name,
+    )
+
     payout = Payout(
         claim_id=claim.id,
         worker_id=claim.worker_id,
         amount=float(claim.approved_payout),
         method="upi",
-        status="pending",
+        status="success" if gateway["status"] == "captured" else "failed",
+        gateway_ref=gateway["payment_id"],
+        initiated_at=datetime.now(timezone.utc).replace(tzinfo=None),
+        completed_at=datetime.now(timezone.utc).replace(tzinfo=None) if gateway["status"] == "captured" else None,
     )
     db.add(payout)
-    db.flush()
 
-    transfer = mock_gateway_transfer(float(claim.approved_payout))
-    payout.status = "success" if transfer["status"] == "success" else "failed"
-    payout.gateway_ref = transfer["transaction_id"]
-    payout.completed_at = datetime.now(timezone.utc)
-    claim.status = "paid" if payout.status == "success" else "payout_processing"
+    if payout.status == "success":
+        claim.status = "paid"
     db.commit()
-    return {"payout_id": payout.id, "status": payout.status, "gateway_ref": payout.gateway_ref}
+    db.refresh(payout)
+
+    return {
+        "payout_id": payout.id,
+        "status": payout.status,
+        "gateway_ref": payout.gateway_ref,
+        "gateway_response": gateway,
+    }
 
 
 @router.get("/{worker_id}")
@@ -49,7 +70,8 @@ def get_payouts(worker_id: int, db: Session = Depends(get_db)) -> list[dict]:
             "method": p.method,
             "status": p.status,
             "gateway_ref": p.gateway_ref,
-            "completed_at": p.completed_at,
+            "initiated_at": p.initiated_at.isoformat() if p.initiated_at else None,
+            "completed_at": p.completed_at.isoformat() if p.completed_at else None,
         }
         for p in payouts
     ]
