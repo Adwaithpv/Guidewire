@@ -26,6 +26,7 @@ from app.services.parametric_rules import (
     remaining_weekly_payout_budget,
 )
 from app.services.payout_service import estimate_payout, mock_razorpay_transfer
+from app.services.whatsapp_service import notify_claim_paid, notify_disruption_alert
 
 
 def find_impacted_policies(db: Session, zone_id: int, started_at: datetime, ended_at: datetime) -> list[tuple[WorkerProfile, Policy]]:
@@ -109,6 +110,19 @@ def _auto_initiate_payout(db: Session, claim: Claim, worker: WorkerProfile) -> P
 
     if payout.status == "success":
         claim.status = "paid"
+        try:
+            user = worker.user
+            if user and user.phone:
+                notify_claim_paid(
+                    to_phone=user.phone,
+                    worker_name=user.name,
+                    claim_type=claim.claim_type,
+                    payout_amount=float(claim.approved_payout),
+                    gateway_ref=gateway_result["payment_id"],
+                    upi_id=worker.payout_upi,
+                )
+        except Exception:
+            pass
 
     return payout
 

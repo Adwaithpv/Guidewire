@@ -178,4 +178,18 @@ export const api = {
     request(`${API_BASE}/analytics/worker-protection/${workerId}`),
   getPayoutsLedger: () =>
     request(`${API_BASE}/analytics/payouts-ledger`),
+
+  // Phase 3: WhatsApp notifications
+  getWhatsappStatus: () =>
+    request(`${API_BASE}/notifications/whatsapp/status`),
+  testWhatsapp: (phone: string, message?: string) =>
+    request(`${API_BASE}/notifications/whatsapp/test`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, message }),
+    }),
+  sendPolicyWhatsapp: (workerId: number) =>
+    request(`${API_BASE}/notifications/whatsapp/policy-activated/${workerId}`, { method: "POST" }),
+  sendShiftGuardianWhatsapp: (workerId: number) =>
+    request(`${API_BASE}/notifications/whatsapp/shift-guardian/${workerId}`, { method: "POST" }),
 };

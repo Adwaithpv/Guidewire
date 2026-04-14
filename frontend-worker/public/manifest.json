@@ -1,0 +1,16 @@
+{
+  "name": "SurakshaShift — Income Protection",
+  "short_name": "SurakshaShift",
+  "description": "Weekly parametric income protection for delivery workers. Rain, floods, AQI, closures — your earnings stay safe.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B1120",
+  "theme_color": "#E8652B",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["finance", "insurance"],
+  "lang": "en-IN"
+}

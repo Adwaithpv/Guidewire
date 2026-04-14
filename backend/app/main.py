@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine
 from app.models import Base
 
-from app.routers import analytics, auth, claims, events, fraud, guardian, payouts, policies, risk, shift_guardian, workers
+from app.routers import analytics, auth, claims, events, fraud, guardian, notifications, payouts, policies, risk, shift_guardian, workers
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -59,3 +59,4 @@ app.include_router(fraud.router)
 app.include_router(payouts.router)
 app.include_router(guardian.router)
 app.include_router(analytics.router)
+app.include_router(notifications.router)

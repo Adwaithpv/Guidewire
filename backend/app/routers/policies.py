@@ -176,6 +176,25 @@ def create_policy(payload: PolicyCreateRequest, db: Session = Depends(get_db)) -
             )
     db.commit()
     db.refresh(policy)
+
+    try:
+        from app.services.whatsapp_service import notify_policy_activated
+        from app.models.entities import Zone
+        user = worker.user
+        zone = db.scalar(select(Zone).where(Zone.id == worker.primary_zone_id))
+        plan_labels = {"basic": "Basic Shield", "standard": "Standard Shield", "full": "Full Shield"}
+        if user and user.phone:
+            notify_policy_activated(
+                to_phone=user.phone,
+                worker_name=user.name,
+                plan_label=plan_labels.get(payload.plan_id, payload.plan_id),
+                premium=float(policy.premium_weekly),
+                max_payout=float(policy.max_weekly_payout),
+                zone_name=zone.zone_name if zone else "your zone",
+            )
+    except Exception:
+        pass
+
     return {"policy_id": policy.id, "status": policy.status}
 
 

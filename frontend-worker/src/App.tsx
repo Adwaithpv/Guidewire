@@ -47,6 +47,7 @@ function App() {
   const [simPipelineStep, setSimPipelineStep] = useState<number | null>(null);
   const [shiftRec, setShiftRec] = useState<any>(null);
   const [shiftRecLoading, setShiftRecLoading] = useState(false);
+  const [waConfigured, setWaConfigured] = useState<boolean | null>(null);
 
   // Phase 3 state
   const [workerProtection, setWorkerProtection] = useState<any>(null);
@@ -113,6 +114,10 @@ function App() {
     }
     return () => clearInterval(interval);
   }, [view, workerId, fetchDashboardData, fetchLiveRisk]);
+
+  useEffect(() => {
+    api.getWhatsappStatus().then(r => setWaConfigured(r.configured)).catch(() => setWaConfigured(false));
+  }, []);
 
   useEffect(() => {
     if (simPipelineStep === null) return;
@@ -1405,8 +1410,25 @@ function App() {
                   </div>
                 )}
 
-                <div style={{ fontSize: "0.75rem", color: "var(--text-dim)" }}>
-                  Window: {shiftRec.forecast_window} · {shiftRec.generated_at && new Date(shiftRec.generated_at).toLocaleString("en-IN")}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+                  <div style={{ fontSize: "0.75rem", color: "var(--text-dim)" }}>
+                    Window: {shiftRec.forecast_window} · {shiftRec.generated_at && new Date(shiftRec.generated_at).toLocaleString("en-IN")}
+                  </div>
+                  {waConfigured && workerId && (
+                    <button
+                      type="button"
+                      className="btn-ghost"
+                      style={{ fontSize: "0.78rem", padding: "6px 12px", display: "flex", alignItems: "center", gap: "4px" }}
+                      onClick={async () => {
+                        try {
+                          await api.sendShiftGuardianWhatsapp(workerId);
+                          alert("Shift Guardian summary sent to your WhatsApp!");
+                        } catch { alert("Could not send WhatsApp notification"); }
+                      }}
+                    >
+                      📱 Send to WhatsApp
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -1551,8 +1573,8 @@ function App() {
                       },
                   n > 0
                     ? {
-                        title: "Payout initiated",
-                        detail: `UPI credit to ${profile?.payout_upi || "your registered UPI"} (demo — instant settlement).`,
+                        title: "Payout via UPI + WhatsApp alert",
+                        detail: `₹${total.toFixed(0)} credited to ${profile?.payout_upi || "your UPI"} via Razorpay. WhatsApp confirmation sent to your number.`,
                       }
                     : {
                         title: "No payout",
@@ -1666,8 +1688,18 @@ function App() {
                   </div>
                 </div>
                 <p style={{ fontSize: "0.82rem", color: "var(--text-dim)", marginTop: "20px", marginBottom: 0 }}>
-                  Payouts: income loss only — excludes health, accident, and vehicle repair. UPI on file: {profile?.payout_upi || "—"}
-                </p>
+                Payouts: income loss only — excludes health, accident, and vehicle repair. UPI on file: {profile?.payout_upi || "—"}
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "12px" }}>
+                <span style={{ fontSize: "0.82rem", color: waConfigured ? "var(--success)" : "var(--text-dim)" }}>
+                  📱 WhatsApp alerts: <strong>{waConfigured ? "Active" : "Not configured"}</strong>
+                </span>
+                {waConfigured && (
+                  <span style={{ fontSize: "0.72rem", color: "var(--text-dim)" }}>
+                    Claim payouts & disruption alerts sent to your number
+                  </span>
+                )}
+              </div>
               </>
             ) : (
               <div className="empty-state">
