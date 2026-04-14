@@ -1,40 +1,42 @@
 /* SurakshaShift — light insurance dashboard (fintech) */
 
 :root {
-  --bg: hsl(210, 20%, 97%);
-  --bg-alt: hsl(210, 16%, 93%);
-  --surface: hsl(0, 0%, 100%);
-  --surface-raised: hsl(210, 20%, 98%);
-  --border: hsl(220, 15%, 88%);
-  --border-strong: hsl(220, 15%, 78%);
-  --accent: hsl(22, 95%, 55%);
-  --accent-light: hsl(22, 95%, 95%);
-  --accent-hover: hsl(22, 95%, 48%);
-  --accent-gradient: linear-gradient(135deg, hsl(22, 95%, 55%), hsl(340, 85%, 58%));
-  --navy: hsl(222, 45%, 12%);
-  --text-primary: hsl(222, 35%, 15%);
-  --text-secondary: hsl(222, 20%, 40%);
-  --text-muted: hsl(222, 15%, 58%);
-  --success: hsl(152, 60%, 40%);
-  --success-bg: hsl(152, 60%, 95%);
-  --success-border: hsl(152, 45%, 82%);
-  --warning: hsl(38, 92%, 48%);
-  --warning-bg: hsl(38, 92%, 95%);
-  --error: hsl(4, 75%, 55%);
-  --error-bg: hsl(4, 75%, 96%);
-  --shadow-sm: 0 1px 3px hsla(222, 30%, 15%, 0.08), 0 1px 2px hsla(222, 30%, 15%, 0.04);
-  --shadow-md: 0 4px 12px hsla(222, 30%, 15%, 0.1), 0 2px 6px hsla(222, 30%, 15%, 0.06);
-  --shadow-lg: 0 12px 32px hsla(222, 30%, 15%, 0.12), 0 4px 12px hsla(222, 30%, 15%, 0.06);
+  --bg: #0B0F19;
+  --bg-alt: #111827;
+  --surface: rgba(30, 41, 59, 0.6);
+  --surface-raised: rgba(51, 65, 85, 0.7);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --accent: #10B981;
+  --accent-light: rgba(16, 185, 129, 0.15);
+  --accent-hover: #059669;
+  --accent-gradient: linear-gradient(135deg, #10B981, #0EA5E9);
+  --navy: #F8FAFC;
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  
+  --success: #10B981;
+  --success-bg: rgba(16, 185, 129, 0.1);
+  --success-border: rgba(16, 185, 129, 0.2);
+  --warning: #F59E0B;
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  --error: #EF4444;
+  --error-bg: rgba(239, 68, 68, 0.1);
+  
+  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
 
   /* Legacy aliases (inline styles in App.tsx) */
   --text-main: var(--text-primary);
-  --text-dim: hsl(222, 14%, 48%);
+  --text-dim: var(--text-muted);
   --primary: var(--accent);
   --primary-hover: var(--accent-hover);
   --primary-gradient: var(--accent-gradient);
-  --primary-glow: hsla(22, 95%, 55%, 0.35);
-  --secondary: hsl(200, 65%, 42%);
-  --border-glow: var(--border-strong);
+  --primary-glow: rgba(16, 185, 129, 0.4);
+  --secondary: #0EA5E9;
+  --border-glow: rgba(255, 255, 255, 0.25);
   --surface-hover: var(--surface-raised);
   --surface-active: var(--accent-light);
   --radius-sm: 10px;
@@ -52,7 +54,7 @@
 }
 
 body {
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   color: var(--text-primary);
   background: var(--bg);
   min-height: 100vh;
@@ -67,7 +69,7 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
   font-weight: 700;
   letter-spacing: -0.03em;
   color: var(--navy);
@@ -101,10 +103,10 @@ h6 {
   max-width: 1120px;
   width: 100%;
   margin: 0 auto;
-  border-bottom: 1px solid hsla(220, 15%, 88%, 0.7);
-  background: hsla(0, 0%, 100%, 0.72);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(11, 15, 25, 0.65);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   position: sticky;
   top: 0;
   z-index: 20;
@@ -121,7 +123,7 @@ h6 {
 }
 
 .landing-brand-text {
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
   font-weight: 800;
   font-size: 1.2rem;
   letter-spacing: -0.04em;
@@ -129,7 +131,7 @@ h6 {
 }
 
 .landing-signin {
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
   font-weight: 600;
   font-size: 0.9rem;
   padding: 10px 20px;
@@ -171,7 +173,7 @@ h6 {
 }
 
 .landing-headline {
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
   font-weight: 800;
   font-size: clamp(2.1rem, 5vw, 3.15rem);
   line-height: 1.08;
@@ -211,7 +213,7 @@ h6 {
 }
 
 .landing-btn-primary {
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
   font-weight: 700;
   font-size: 1.05rem;
   padding: 16px 40px;
@@ -270,7 +272,7 @@ h6 {
 }
 
 .landing-feature-title {
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
   font-size: 1.05rem;
   font-weight: 800;
   color: var(--navy);
@@ -332,7 +334,7 @@ h6 {
   gap: 14px;
 }
 .auth-brand-wordmark {
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
   font-weight: 800;
   font-size: 1.65rem;
   letter-spacing: -0.04em;
@@ -453,7 +455,7 @@ h6 {
   flex-shrink: 0;
 }
 .quote-city {
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
   font-weight: 700;
   font-size: 0.95rem;
   color: var(--navy);
@@ -636,7 +638,7 @@ button.plan-select-btn.selected {
   align-items: center;
   gap: 10px;
   color: var(--navy);
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
   letter-spacing: -0.03em;
 }
 .sidebar-logo::before {
@@ -746,6 +748,8 @@ button.nav-link {
 /* ── Cards ──────────────────────────── */
 .card {
   background: var(--surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 28px;
@@ -816,7 +820,7 @@ textarea {
   background: var(--surface);
   border: 1.5px solid var(--border);
   color: var(--text-primary);
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   font-size: 0.95rem;
   transition: var(--transition-smooth);
   outline: none;
@@ -838,7 +842,7 @@ button {
   border: none;
   border-radius: var(--radius-sm);
   padding: 14px 24px;
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -890,7 +894,7 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
   font-weight: 700;
   font-size: 0.8rem;
   color: var(--text-muted);
@@ -1028,7 +1032,7 @@ button:disabled {
   margin-right: 4px;
 }
 .premium-amount .amount {
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
   font-size: 3rem;
   font-weight: 800;
   color: var(--accent);
@@ -1184,7 +1188,7 @@ button:disabled {
   padding-right: 36px;
 }
 .stat-value {
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
   font-size: 1.75rem;
   font-weight: 800;
   color: var(--navy);
@@ -1277,7 +1281,7 @@ button:disabled {
   margin-bottom: 8px;
 }
 .condition-value {
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
   font-size: 1.35rem;
   font-weight: 800;
   color: var(--navy);
@@ -1406,7 +1410,7 @@ button:disabled {
 }
 .item-title {
   font-weight: 600;
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
   font-size: 0.92rem;
   color: var(--text-primary);
 }
@@ -1421,7 +1425,7 @@ button:disabled {
 .item-amount {
   font-size: 1.1rem;
   font-weight: 800;
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
   color: var(--text-primary);
   flex-shrink: 0;
 }
@@ -1513,7 +1517,7 @@ button:disabled {
   box-shadow: var(--shadow-sm);
 }
 .sim-pipeline-header {
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: "Outfit", system-ui, sans-serif;
   font-weight: 800;
   font-size: 0.88rem;
   color: var(--navy);

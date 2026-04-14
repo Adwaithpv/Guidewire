@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { api, WorkerPayload } from "./services/api";
+import { CloudRain, Waves, Activity, AlertTriangle, WifiOff, FileText, CheckCircle2, ShieldCheck, Zap } from "lucide-react";
 
 type View = "landing" | "otp" | "register" | "quote" | "dashboard" | "admin";
 
@@ -347,9 +348,16 @@ function App() {
   };
 
   // ── Helpers ──
-  const eventIcon: Record<string, string> = {
-    heavy_rain: "🌧️", flood: "🌊", aqi_severe: "😷",
-    curfew: "🚧", platform_outage: "📡", parametric_income_loss: "📋",
+  const EventIcon = ({ type, size = 16 }: { type: string, size?: number }) => {
+    switch (type) {
+      case "heavy_rain": return <CloudRain size={size} />;
+      case "flood": return <Waves size={size} />;
+      case "aqi_severe": return <Activity size={size} />;
+      case "curfew": return <AlertTriangle size={size} />;
+      case "platform_outage": return <WifiOff size={size} />;
+      case "parametric_income_loss": return <FileText size={size} />;
+      default: return <FileText size={size} />;
+    }
   };
   const statusColor = (s: string) =>
     s === "paid" ? "success" : s === "approved" ? "success" : s === "fraud_check" ? "pending" : "";
@@ -1873,7 +1881,7 @@ function App() {
                   <div className="data-item" key={claim.id}>
                     <div className="item-main">
                       <span className="item-title">
-                        {eventIcon[claim.claim_type] || "📋"}{" "}
+                        <EventIcon type={claim.claim_type} size={18} />{" "}
                         {claim.auto_created ? "Auto claim" : "Manual claim"} · {String(claim.claim_type || "").replace(/_/g, " ")}
                       </span>
                       <span className="item-meta">
@@ -2111,7 +2119,7 @@ function App() {
                             <div className="data-item" key={row.event_type} style={{ alignItems: "center" }}>
                               <div className="item-main" style={{ flex: 1 }}>
                                 <span className="item-title">
-                                  {eventIcon[row.event_type] || "📋"} {String(row.event_type || "").replace(/_/g, " ")}
+                                  <EventIcon type={row.event_type} size={18} /> {String(row.event_type || "").replace(/_/g, " ")}
                                 </span>
                                 <div style={{ background: "var(--surface-raised)", borderRadius: "6px", height: "8px", marginTop: "6px", overflow: "hidden" }}>
                                   <div style={{ height: "100%", borderRadius: "6px", background: "var(--primary)", width: `${(row.count / maxCount) * 100}%` }} />
@@ -2255,7 +2263,7 @@ function App() {
                         <div className="data-item" key={f.event_type} style={{ alignItems: "center" }}>
                           <div className="item-main" style={{ flex: 1 }}>
                             <span className="item-title">
-                              {eventIcon[f.event_type] || "📋"} {f.label}
+                              <EventIcon type={f.event_type} size={18} /> {f.label}
                               <span style={{ marginLeft: "8px", fontSize: "0.75rem" }}>{trendIcon(f.risk_trend)} {f.risk_trend}</span>
                             </span>
                             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "6px" }}>
