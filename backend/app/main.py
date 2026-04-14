@@ -14,15 +14,27 @@ log = logging.getLogger(__name__)
 
 app = FastAPI(title="SurakshaShift AI API", version="0.3.0-phase3")
 
-cors_env = os.getenv("CORS_ORIGINS", "*")
-allow_origins = ["*"] if cors_env.strip() == "*" else [
-    origin.strip() for origin in cors_env.split(",") if origin.strip()
-]
+cors_env = os.getenv("CORS_ORIGINS", "*").strip()
+allow_origin_regex = (os.getenv("CORS_ORIGIN_REGEX", "") or "").strip() or None
+allow_credentials_env = (os.getenv("CORS_ALLOW_CREDENTIALS", "false") or "").strip().lower()
+allow_credentials = allow_credentials_env in {"1", "true", "yes", "on"}
+
+allow_origins = (
+    ["*"]
+    if cors_env == "*"
+    else [origin.strip() for origin in cors_env.split(",") if origin.strip()]
+)
+
+# Browsers reject wildcard CORS when credentials are allowed.
+# If "*" is used, force credentials off unless explicit origins are configured.
+if allow_origins == ["*"] and allow_credentials:
+    allow_credentials = False
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allow_origins,
-    allow_credentials=True,
+    allow_origin_regex=allow_origin_regex,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
