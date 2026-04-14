@@ -26,7 +26,7 @@ from app.services.parametric_rules import (
     remaining_weekly_payout_budget,
 )
 from app.services.payout_service import estimate_payout, mock_razorpay_transfer
-from app.services.whatsapp_service import notify_claim_paid, notify_disruption_alert
+from app.services.whatsapp_service import notify_claim_created, notify_claim_paid
 
 
 def find_impacted_policies(db: Session, zone_id: int, started_at: datetime, ended_at: datetime) -> list[tuple[WorkerProfile, Policy]]:
@@ -197,6 +197,24 @@ def create_claim_candidates(
             )
         )
         db.add(match)
+
+        # Notify worker as soon as claim is created for this disruption.
+        try:
+            user = worker.user
+            zone = db.scalar(select(Zone).where(Zone.id == event.zone_id))
+            if user and user.phone:
+                notify_claim_created(
+                    to_phone=user.phone,
+                    worker_name=user.name or "Worker",
+                    claim_type=claim.claim_type,
+                    zone_name=zone.zone_name if zone else "your zone",
+                    severity=event.severity or "moderate",
+                    claim_id=claim.id,
+                    review_status=fraud_review,
+                    expected_payout=float(claim.approved_payout),
+                )
+        except Exception:
+            pass
 
         if claim.status == "approved":
             _auto_initiate_payout(db, claim, worker)

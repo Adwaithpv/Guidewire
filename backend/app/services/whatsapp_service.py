@@ -145,6 +145,23 @@ def notify_policy_activated(
     return send_whatsapp(to_phone, message)
 
 
+def notify_registration_welcome(
+    to_phone: str,
+    worker_name: str,
+    city: str,
+    zone_name: str,
+) -> dict[str, Any]:
+    message = (
+        f"👋 *Welcome to SurakshaShift*\n\n"
+        f"Hi {worker_name}, your account is set up.\n"
+        f"📍 City: {city}\n"
+        f"🧭 Zone: {zone_name}\n\n"
+        f"Next step: activate a policy to start coverage.\n"
+        f"Reply *menu* anytime for quick actions."
+    )
+    return send_whatsapp(to_phone, message)
+
+
 def notify_disruption_alert(
     to_phone: str,
     worker_name: str,
@@ -160,6 +177,31 @@ def notify_disruption_alert(
         f"Good news: this is covered under your policy.\n"
         f"If affected, your claim will be processed automatically.\n\n"
         f"Please stay safe and check the app for live updates."
+    )
+    return send_whatsapp(to_phone, message)
+
+
+def notify_claim_created(
+    to_phone: str,
+    worker_name: str,
+    claim_type: str,
+    zone_name: str,
+    severity: str,
+    claim_id: int,
+    review_status: str,
+    expected_payout: float,
+) -> dict[str, Any]:
+    event_label = claim_type.replace("_", " ").title()
+    status_label = (
+        "under fraud review" if review_status == "manual_review" else "approved for processing"
+    )
+    message = (
+        f"🧾 *New claim created*\n\n"
+        f"Hi {worker_name}, we detected *{event_label}* in *{zone_name}* ({severity}).\n"
+        f"Claim ID: *#{claim_id}*\n"
+        f"Status: *{status_label}*\n"
+        f"Estimated payout: *₹{expected_payout:.0f}*\n\n"
+        f"We will keep you updated on payout progress."
     )
     return send_whatsapp(to_phone, message)
 
