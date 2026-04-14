@@ -1818,3 +1818,96 @@ button:disabled {
     padding: 10px 6px;
   }
 }
+
+/* --- PREMIUM DARK MODE OVERRIDES --- */
+body, .app-container, .auth-panel-right {
+    background: var(--bg) !important;
+    color: var(--text-primary) !important;
+}
+
+.landing {
+    background: var(--bg) !important;
+}
+
+.landing-nav {
+    background: rgba(11, 15, 25, 0.65) !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+
+.landing-main, .auth-panel-left {
+    background: transparent !important;
+}
+
+.card, .landing-feature {
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+.landing-headline, .landing-feature-title, h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary) !important;
+}
+
+.landing-lede, .landing-feature-copy, .quote-metric {
+    color: var(--text-secondary) !important;
+}
+
+.sidebar {
+    background: rgba(11, 15, 25, 0.85) !important;
+    border-right: 1px solid var(--border) !important;
+}
+
+.nav-link {
+    color: var(--text-secondary) !important;
+}
+.nav-link:hover {
+    background: var(--surface-raised) !important;
+    color: var(--text-primary) !important;
+}
+.nav-link.active {
+    background: var(--accent-light) !important;
+}
+
+select, input, textarea {
+    background: var(--bg-alt) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border) !important;
+}
+
+button {
+    background: var(--accent-gradient) !important;
+    color: #fff !important;
+}
+
+.landing-signin {
+    background: var(--surface) !important;
+    color: var(--text-secondary) !important;
+    border: 1.5px solid var(--border-strong) !important;
+}
+
+.auth-panel-left {
+    background: var(--bg-alt) !important;
+}
+
+.auth-panel-right {
+    background: var(--bg) !important;
+}
+
+.data-item {
+    background: var(--surface-raised) !important;
+    border: 1px solid var(--border) !important;
+}
+
+.item-meta, .item-sub {
+    color: var(--text-muted) !important;
+}
+
+.worker-status {
+    background: var(--bg-alt) !important;
+    border: 1px solid var(--border) !important;
+}
+
+/* Fix any remaining light text areas */
+.quote-top-bar, .worker-status {
+    background: var(--surface-raised) !important;
+}
