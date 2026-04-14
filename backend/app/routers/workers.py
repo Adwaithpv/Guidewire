@@ -3,7 +3,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.entities import User, WorkerProfile, Zone
+from datetime import datetime, timezone
+
+from app.models.entities import DataConsent, User, WorkerProfile, Zone
 from app.schemas.common import WorkerProfileCreate, WorkerProfileResponse
 
 router = APIRouter(prefix="/workers", tags=["workers"])
@@ -51,6 +53,26 @@ def create_worker_profile(payload: WorkerProfileCreate, db: Session = Depends(ge
         profile.gps_enabled = payload.gps_enabled
         profile.payout_upi = payload.payout_upi
 
+    db.flush()
+    consent = db.scalar(select(DataConsent).where(DataConsent.worker_id == profile.id))
+    now_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+    if consent is None:
+        consent = DataConsent(
+            worker_id=profile.id,
+            gps_consent=payload.gps_consent,
+            upi_consent=payload.upi_consent,
+            platform_data_consent=payload.platform_data_consent,
+            consent_version="v1",
+            captured_at=now_naive,
+            updated_at=now_naive,
+        )
+        db.add(consent)
+    else:
+        consent.gps_consent = payload.gps_consent
+        consent.upi_consent = payload.upi_consent
+        consent.platform_data_consent = payload.platform_data_consent
+        consent.updated_at = now_naive
+
     db.commit()
     db.refresh(profile)
     return WorkerProfileResponse(worker_id=profile.id, user_id=user.id, risk_score=profile.risk_score)
@@ -63,6 +85,7 @@ def get_worker_profile(worker_id: int, db: Session = Depends(get_db)) -> dict:
         raise HTTPException(status_code=404, detail="Worker not found")
     zone = db.scalar(select(Zone).where(Zone.id == profile.primary_zone_id))
     user = db.scalar(select(User).where(User.id == profile.user_id))
+    consent = db.scalar(select(DataConsent).where(DataConsent.worker_id == profile.id))
     return {
         "id": profile.id,
         "user_id": profile.user_id,
@@ -77,6 +100,14 @@ def get_worker_profile(worker_id: int, db: Session = Depends(get_db)) -> dict:
         "gps_enabled": profile.gps_enabled,
         "payout_upi": profile.payout_upi,
         "risk_score": profile.risk_score,
+        "consent": {
+            "gps_consent": bool(consent.gps_consent) if consent else bool(profile.gps_enabled),
+            "upi_consent": bool(consent.upi_consent) if consent else bool(profile.payout_upi),
+            "platform_data_consent": bool(consent.platform_data_consent) if consent else True,
+            "consent_version": consent.consent_version if consent else "v1",
+            "captured_at": consent.captured_at.isoformat() if consent and consent.captured_at else None,
+            "updated_at": consent.updated_at.isoformat() if consent and consent.updated_at else None,
+        },
     }
 
 

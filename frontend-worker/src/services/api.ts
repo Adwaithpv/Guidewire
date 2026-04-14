@@ -178,6 +178,10 @@ export const api = {
     request(`${API_BASE}/analytics/worker-protection/${workerId}`),
   getPayoutsLedger: () =>
     request(`${API_BASE}/analytics/payouts-ledger`),
+  getFinancialProof: (city: string) =>
+    request(`${API_BASE}/analytics/financial-proof?city=${encodeURIComponent(city)}`),
+  getComplianceChecklist: () =>
+    request(`${API_BASE}/analytics/compliance-checklist`),
 
   // Phase 3: WhatsApp notifications
   getWhatsappStatus: () =>

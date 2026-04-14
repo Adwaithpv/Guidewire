@@ -171,3 +171,16 @@ class ShiftGuardianAlert(Base):
     recommendation_text: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utc_now_naive)
 
+
+class DataConsent(Base):
+    __tablename__ = "data_consents"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    worker_id: Mapped[int] = mapped_column(ForeignKey("worker_profiles.id"), unique=True, index=True)
+    gps_consent: Mapped[bool] = mapped_column(Boolean, default=True)
+    upi_consent: Mapped[bool] = mapped_column(Boolean, default=True)
+    platform_data_consent: Mapped[bool] = mapped_column(Boolean, default=True)
+    consent_version: Mapped[str] = mapped_column(String(20), default="v1")
+    captured_at: Mapped[datetime] = mapped_column(DateTime, default=_utc_now_naive)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=_utc_now_naive)
+

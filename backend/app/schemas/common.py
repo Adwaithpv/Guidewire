@@ -27,6 +27,9 @@ class WorkerProfileCreate(BaseModel):
     shift_type: str
     gps_enabled: bool = False
     payout_upi: str
+    gps_consent: bool = True
+    upi_consent: bool = True
+    platform_data_consent: bool = True
 
 
 class WorkerProfileResponse(BaseModel):

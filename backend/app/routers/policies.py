@@ -1,9 +1,11 @@
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.entities import Policy, PolicyTrigger, WorkerProfile
+from app.models.entities import DataConsent, DisruptionEvent, Policy, PolicyTrigger, WorkerProfile, Zone
 from app.schemas.common import (
     AllPlansQuoteResponse,
     PlanQuote,
@@ -22,6 +24,45 @@ from app.services.policy_service import coverage_window, default_triggers
 from app.services.risk_service import fetch_live_risk_factors_sync, quote_premium, shift_type_to_exposure
 
 router = APIRouter(prefix="/policies", tags=["policies"])
+
+
+def _adverse_selection_lockout(
+    db: Session,
+    worker: WorkerProfile,
+    city: str,
+    zone_id: int | None,
+) -> tuple[bool, str]:
+    """
+    Prevent purchases right after/near major disruptions (organizer checklist #8).
+    """
+    live = fetch_live_risk_factors_sync(city)
+    if live.is_disruptive and (
+        live.rain_risk >= 0.75
+        or live.flood_risk >= 0.6
+        or live.aqi_risk >= 0.75
+        or live.closure_risk >= 0.4
+    ):
+        return True, "Policy purchase temporarily locked due to current high-severity disruption conditions."
+
+    if zone_id is not None:
+        since = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=48)
+        recent_zone_event = db.scalar(
+            select(DisruptionEvent)
+            .where(
+                DisruptionEvent.zone_id == zone_id,
+                DisruptionEvent.started_at >= since,
+                DisruptionEvent.event_type.in_(["heavy_rain", "flood", "aqi_severe", "curfew", "platform_outage"]),
+                DisruptionEvent.severity.in_(["high", "severe"]),
+            )
+            .order_by(DisruptionEvent.id.desc())
+        )
+        if recent_zone_event is not None:
+            return (
+                True,
+                "Policy purchase is locked for 48 hours after a severe local disruption alert.",
+            )
+
+    return False, ""
 
 
 @router.post("/quote", response_model=PolicyQuoteResponse)
@@ -149,6 +190,33 @@ def create_policy(payload: PolicyCreateRequest, db: Session = Depends(get_db)) -
     if worker is None:
         raise HTTPException(status_code=404, detail="Worker not found")
 
+    zone = db.scalar(select(Zone).where(Zone.id == worker.primary_zone_id))
+    city = zone.city if zone else "Bengaluru"
+
+    consent = db.scalar(select(DataConsent).where(DataConsent.worker_id == worker.id))
+    if consent is not None:
+        if not (consent.gps_consent and consent.upi_consent and consent.platform_data_consent):
+            raise HTTPException(
+                status_code=400,
+                detail="Required data consents (GPS, UPI, and platform activity) are needed before policy activation.",
+            )
+    else:
+        # Backward-compatible fallback for older profiles created before consent table.
+        if not worker.gps_enabled or not worker.payout_upi:
+            raise HTTPException(
+                status_code=400,
+                detail="Enable GPS and provide UPI details before policy activation.",
+            )
+
+    locked, reason = _adverse_selection_lockout(
+        db,
+        worker=worker,
+        city=city,
+        zone_id=worker.primary_zone_id,
+    )
+    if locked:
+        raise HTTPException(status_code=423, detail=reason)
+
     _supersede_active_policies(db, payload.worker_id)
 
     start, end = coverage_window()
@@ -179,9 +247,7 @@ def create_policy(payload: PolicyCreateRequest, db: Session = Depends(get_db)) -
 
     try:
         from app.services.whatsapp_service import notify_policy_activated
-        from app.models.entities import Zone
         user = worker.user
-        zone = db.scalar(select(Zone).where(Zone.id == worker.primary_zone_id))
         plan_labels = {"basic": "Basic Shield", "standard": "Standard Shield", "full": "Full Shield"}
         if user and user.phone:
             notify_policy_activated(

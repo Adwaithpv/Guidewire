@@ -57,6 +57,8 @@ function App() {
   const [adminPredictions, setAdminPredictions] = useState<any>(null);
   const [adminClaimsByTrigger, setAdminClaimsByTrigger] = useState<any[]>([]);
   const [adminPayoutsLedger, setAdminPayoutsLedger] = useState<any[]>([]);
+  const [adminFinancialProof, setAdminFinancialProof] = useState<any>(null);
+  const [adminComplianceChecklist, setAdminComplianceChecklist] = useState<any>(null);
   const [adminLoading, setAdminLoading] = useState(false);
 
   // Dashboard data refresh
@@ -332,18 +334,22 @@ function App() {
     setAdminLoading(true);
     try {
       const city = profile?.city || "Bengaluru";
-      const [kpi, fraud, pred, triggers, ledger] = await Promise.all([
+      const [kpi, fraud, pred, triggers, ledger, financialProof, complianceChecklist] = await Promise.all([
         api.getAnalyticsKpis(),
         api.getFraudOverview(),
         api.getPredictions(city),
         api.getClaimsByTrigger(),
         api.getPayoutsLedger(),
+        api.getFinancialProof(city),
+        api.getComplianceChecklist(),
       ]);
       setAdminKpis(kpi);
       setAdminFraud(fraud);
       setAdminPredictions(pred);
       setAdminClaimsByTrigger(triggers);
       setAdminPayoutsLedger(ledger);
+      setAdminFinancialProof(financialProof);
+      setAdminComplianceChecklist(complianceChecklist);
     } catch (e) {
       console.error(e);
     } finally {
@@ -1969,6 +1975,60 @@ function App() {
                         <div>
                           <span className="stat-label">Avg Fraud Score</span>
                           <div style={{ fontSize: "1.2rem", fontWeight: 600 }}>{adminFraud ? (adminFraud.avg_fraud_score * 100).toFixed(1) + "%" : "—"}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginTop: "20px" }}>
+                    <div className="card" style={{ padding: "24px" }}>
+                      <h3 style={{ marginBottom: "14px" }}>Insurance Checklist Coverage</h3>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "12px" }}>
+                        <span className="stat-label">Current score</span>
+                        <span style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--success)" }}>
+                          {adminComplianceChecklist?.summary?.score ?? 0}/{adminComplianceChecklist?.summary?.out_of ?? 10}
+                        </span>
+                      </div>
+                      <div style={{ display: "grid", gap: "8px" }}>
+                        {(adminComplianceChecklist?.checklist || []).slice(0, 5).map((item: any) => (
+                          <div key={item.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem" }}>
+                            <span style={{ color: "var(--text-secondary)" }}>{item.item}</span>
+                            <span style={{ color: item.status ? "var(--success)" : "var(--warning)", fontWeight: 700 }}>
+                              {item.status ? "Covered" : "Partial"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="card" style={{ padding: "24px" }}>
+                      <h3 style={{ marginBottom: "14px" }}>Financial Proof & Stress Test</h3>
+                      <div className="grid two" style={{ gap: "10px" }}>
+                        <div>
+                          <span className="stat-label">12W BCR</span>
+                          <div style={{ fontSize: "1.25rem", fontWeight: 700 }}>
+                            {adminFinancialProof?.portfolio_financials?.benefit_cost_ratio_bcr ?? "—"}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="stat-label">12W Loss Ratio</span>
+                          <div style={{ fontSize: "1.25rem", fontWeight: 700 }}>
+                            {adminFinancialProof?.portfolio_financials?.loss_ratio_12w != null
+                              ? `${(adminFinancialProof.portfolio_financials.loss_ratio_12w * 100).toFixed(1)}%`
+                              : "—"}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="stat-label">Reserve Buffer</span>
+                          <div style={{ fontSize: "1.1rem", fontWeight: 700 }}>
+                            ₹{adminFinancialProof?.portfolio_financials?.reserve_buffer ?? 0}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="stat-label">14-day Stress Status</span>
+                          <div style={{ fontSize: "1.1rem", fontWeight: 700, color: adminFinancialProof?.stress_test_14d_monsoon?.status === "pass" ? "var(--success)" : "var(--warning)" }}>
+                            {(adminFinancialProof?.stress_test_14d_monsoon?.status || "watch").toUpperCase()}
+                          </div>
                         </div>
                       </div>
                     </div>
