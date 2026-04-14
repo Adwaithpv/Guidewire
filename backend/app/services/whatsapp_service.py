@@ -100,7 +100,6 @@ def send_whatsapp(
             "to": to_wa,
         }
 
-
 # ---------------------------------------------------------------------------
 # Pre-built message templates
 # ---------------------------------------------------------------------------
@@ -115,12 +114,13 @@ def notify_claim_paid(
 ) -> dict[str, Any]:
     event_label = claim_type.replace("_", " ").title()
     message = (
-        f"✅ *SurakshaShift — Payout Confirmed*\n\n"
-        f"Hi {worker_name},\n\n"
-        f"Your claim for *{event_label}* disruption has been approved and paid.\n\n"
-        f"💰 *₹{payout_amount:.0f}* sent to UPI: {upi_id}\n"
-        f"🔗 Ref: {gateway_ref}\n\n"
-        f"Your income is protected. Stay safe! 🛡️"
+        f"✅ *Payout sent successfully*\n\n"
+        f"Hi {worker_name},\n"
+        f"We approved your *{event_label}* claim.\n\n"
+        f"💰 Amount: *₹{payout_amount:.0f}*\n"
+        f"🏦 UPI: {upi_id}\n"
+        f"🔗 Ref ID: {gateway_ref}\n\n"
+        f"Thanks for using SurakshaShift. Ride safe! 🛡️"
     )
     return send_whatsapp(to_phone, message)
 
@@ -134,13 +134,13 @@ def notify_policy_activated(
     zone_name: str,
 ) -> dict[str, Any]:
     message = (
-        f"🛡️ *SurakshaShift — Policy Activated*\n\n"
-        f"Hi {worker_name},\n\n"
-        f"Your *{plan_label}* weekly cover is now active for *{zone_name}*.\n\n"
-        f"📋 Premium: ₹{premium:.0f}/week\n"
-        f"💰 Max payout: ₹{max_payout:.0f}/week\n\n"
-        f"Covered: Heavy rain, floods, severe AQI, curfews, platform outages.\n\n"
-        f"Disruptions in your zone? We'll auto-process claims and pay you via UPI. 🚀"
+        f"🛡️ *Your policy is now active*\n\n"
+        f"Hi {worker_name},\n"
+        f"Your *{plan_label}* plan is live for *{zone_name}*.\n\n"
+        f"📋 Weekly premium: ₹{premium:.0f}\n"
+        f"💰 Max weekly payout: ₹{max_payout:.0f}\n\n"
+        f"You are covered for rain, flood, severe AQI, curfew/closure, and platform outage.\n"
+        f"If disruption happens in your zone, we auto-create the claim and pay to your UPI."
     )
     return send_whatsapp(to_phone, message)
 
@@ -154,11 +154,12 @@ def notify_disruption_alert(
 ) -> dict[str, Any]:
     event_label = event_type.replace("_", " ").title()
     message = (
-        f"⚠️ *SurakshaShift — Disruption Detected*\n\n"
-        f"Hi {worker_name},\n\n"
-        f"*{event_label}* ({severity}) detected in *{zone_name}*.\n\n"
-        f"Your policy covers this — if you're affected, a claim will be processed automatically.\n\n"
-        f"Stay safe and check the app for updates."
+        f"⚠️ *Disruption alert*\n\n"
+        f"Hi {worker_name},\n"
+        f"We detected *{event_label}* ({severity}) in *{zone_name}*.\n\n"
+        f"Good news: this is covered under your policy.\n"
+        f"If affected, your claim will be processed automatically.\n\n"
+        f"Please stay safe and check the app for live updates."
     )
     return send_whatsapp(to_phone, message)
 
@@ -172,16 +173,17 @@ def notify_shift_guardian(
     income_diff: float,
 ) -> dict[str, Any]:
     message = (
-        f"🧭 *SurakshaShift — Shift Guardian*\n\n"
-        f"Hi {worker_name},\n\n"
-        f"Before you start your shift in *{current_zone}*:\n\n"
-        f"📍 Current zone disruption risk: *{disruption_prob:.0f}%*\n"
+        f"🧭 *Shift Guardian update*\n\n"
+        f"Hi {worker_name},\n"
+        f"Before you start in *{current_zone}*:\n"
+        f"📍 Disruption risk there is *{disruption_prob:.0f}%*.\n"
     )
     if recommended_zone != current_zone and income_diff > 0:
         message += (
-            f"✅ Consider *{recommended_zone}* — estimated extra protected earnings: *+₹{income_diff:.0f}*\n"
+            f"✅ Better option right now: *{recommended_zone}*\n"
+            f"💡 Estimated extra protected earnings: *+₹{income_diff:.0f}*\n"
         )
     else:
-        message += f"✅ Your zone looks good for this shift.\n"
-    message += "\nStay safe out there! 🛡️"
+        message += "✅ Your current zone looks okay for this shift.\n"
+    message += "\nReply *menu* anytime for quick actions."
     return send_whatsapp(to_phone, message)

@@ -45,14 +45,13 @@ def _twiml_message(text: str) -> Response:
 
 def _menu_text() -> str:
     return (
-        "👋 SurakshaShift Bot\n\n"
-        "Reply with:\n"
-        "• menu - show commands\n"
-        "• status - active policy summary\n"
-        "• claims - recent claims\n"
-        "• risk - live city risk snapshot\n"
-        "• guardian - best zone before your shift\n"
-        "• help - support tips"
+        "👋 *Welcome to SurakshaShift WhatsApp Bot*\n\n"
+        "Reply with one word:\n"
+        "• *status* - your active policy\n"
+        "• *claims* - your recent claims\n"
+        "• *risk* - live risk in your city\n"
+        "• *guardian* - safer zone suggestion before shift\n"
+        "• *help* - show this menu again"
     )
 
 
@@ -183,8 +182,7 @@ async def whatsapp_webhook(request: Request, db: Session = Depends(get_db)) -> R
     if worker is None or user is None:
         return _twiml_message(
             "We could not find your worker profile for this WhatsApp number.\n\n"
-            "Please sign up once in the app first, then message again.\n\n"
-            "Type 'menu' for commands."
+            "Please sign up once in the app first, then send *menu* here."
         )
 
     zone = db.scalar(select(Zone).where(Zone.id == worker.primary_zone_id))
@@ -193,7 +191,8 @@ async def whatsapp_webhook(request: Request, db: Session = Depends(get_db)) -> R
 
     if cmd in {"menu", "help", "hi", "hello", "start"}:
         return _twiml_message(
-            f"{_menu_text()}\n\nLogged in as: {user.name} • {zone_name}"
+            f"{_menu_text()}\n\n"
+            f"Logged in as: *{user.name}* ({zone_name})"
         )
 
     if cmd in {"status", "policy"}:
@@ -204,15 +203,16 @@ async def whatsapp_webhook(request: Request, db: Session = Depends(get_db)) -> R
         )
         if not policy:
             return _twiml_message(
-                "No active weekly policy found.\n\nOpen the app and activate a plan first."
+                "You do not have an active weekly policy yet.\n\n"
+                "Open the app and activate a plan, then try again."
             )
         return _twiml_message(
-            "🛡️ Active Policy\n\n"
-            f"Plan: {policy.plan_name}\n"
-            f"Premium: ₹{float(policy.premium_weekly):.0f}/week\n"
-            f"Max payout: ₹{float(policy.max_weekly_payout):.0f}/week\n"
+            "🛡️ *Your active policy*\n\n"
+            f"Plan: *{policy.plan_name}*\n"
+            f"Weekly premium: ₹{float(policy.premium_weekly):.0f}\n"
+            f"Max weekly payout: ₹{float(policy.max_weekly_payout):.0f}\n"
             f"Zone: {zone_name}\n"
-            f"Status: {policy.status}"
+            f"Status: {policy.status.title()}"
         )
 
     if cmd in {"claims", "claim"}:
@@ -224,24 +224,25 @@ async def whatsapp_webhook(request: Request, db: Session = Depends(get_db)) -> R
         ).all()
         if not claims:
             return _twiml_message(
-                "No claims yet.\n\nWhen a covered disruption happens, claims appear here automatically."
+                "No claims yet.\n\n"
+                "When a covered disruption happens, claims are created automatically."
             )
         lines = []
         for c in claims:
             lines.append(
-                f"#{c.id} {c.claim_type.replace('_', ' ')} - {c.status} - ₹{float(c.approved_payout):.0f}"
+                f"#{c.id}: {c.claim_type.replace('_', ' ').title()} | {c.status.replace('_', ' ').title()} | ₹{float(c.approved_payout):.0f}"
             )
-        return _twiml_message("📋 Recent Claims\n\n" + "\n".join(lines))
+        return _twiml_message("📋 *Your recent claims*\n\n" + "\n".join(lines))
 
     if cmd in {"risk", "live", "weather"}:
         live = await fetch_live_risk_factors(city)
         return _twiml_message(
-            f"🌦️ Live Risk — {city}\n\n"
-            f"Rain risk: {live.rain_risk * 100:.0f}%\n"
-            f"Flood risk: {live.flood_risk * 100:.0f}%\n"
-            f"AQI risk: {live.aqi_risk * 100:.0f}%\n"
-            f"Closure risk: {live.closure_risk * 100:.0f}%\n"
-            f"Overall: {live.overall_risk.upper()}"
+            f"🌦️ *Live risk in {city}*\n\n"
+            f"Rain: {live.rain_risk * 100:.0f}%\n"
+            f"Flood: {live.flood_risk * 100:.0f}%\n"
+            f"AQI: {live.aqi_risk * 100:.0f}%\n"
+            f"Closure: {live.closure_risk * 100:.0f}%\n\n"
+            f"Overall risk: *{live.overall_risk.upper()}*"
         )
 
     if cmd in {"guardian", "shift", "recommend"}:
@@ -253,14 +254,14 @@ async def whatsapp_webhook(request: Request, db: Session = Depends(get_db)) -> R
             shift_type=worker.shift_type,
         )
         return _twiml_message(
-            "🧭 Shift Guardian\n\n"
+            "🧭 *Shift Guardian*\n\n"
             f"Current zone: {rec.current_zone.zone_name} ({rec.current_zone.disruption_probability:.0f}% disruption)\n"
-            f"Recommended: {rec.recommended_zone.zone_name} ({rec.recommended_zone.disruption_probability:.0f}% disruption)\n"
-            f"Estimated protected earnings: +₹{rec.estimated_income_difference:.0f}\n\n"
+            f"Recommended zone: {rec.recommended_zone.zone_name} ({rec.recommended_zone.disruption_probability:.0f}% disruption)\n"
+            f"Potential extra protected earnings: +₹{rec.estimated_income_difference:.0f}\n\n"
             f"{rec.recommendation_text}"
         )
 
     return _twiml_message(
-        "Sorry, I did not understand that command.\n\n"
-        "Type 'menu' to see all available options."
+        "Sorry, I did not understand that.\n\n"
+        "Please type *menu* to see available commands."
     )
