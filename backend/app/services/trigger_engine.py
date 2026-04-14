@@ -5,6 +5,7 @@ runs advanced fraud detection, creates claims, and auto-initiates payouts.
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import time
 
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
@@ -113,6 +114,9 @@ def _auto_initiate_payout(db: Session, claim: Claim, worker: WorkerProfile) -> P
         try:
             user = worker.user
             if user and user.phone:
+                # Keep WhatsApp chronology clear in chat threads:
+                # claim-created notification is sent first, then payout confirmation.
+                time.sleep(1.2)
                 notify_claim_paid(
                     to_phone=user.phone,
                     worker_name=user.name,
