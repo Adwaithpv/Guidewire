@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import and_, select
@@ -24,6 +25,7 @@ from app.services.policy_service import coverage_window, default_triggers
 from app.services.risk_service import fetch_live_risk_factors_sync, quote_premium, shift_type_to_exposure
 
 router = APIRouter(prefix="/policies", tags=["policies"])
+log = logging.getLogger(__name__)
 
 
 def _adverse_selection_lockout(
@@ -259,7 +261,7 @@ def create_policy(payload: PolicyCreateRequest, db: Session = Depends(get_db)) -
             "her-basic": "Her Shield Lite", "her-standard": "Her Shield", "her-full": "Her Shield Max",
         }
         if user and user.phone:
-            notify_policy_activated(
+            wa_result = notify_policy_activated(
                 to_phone=user.phone,
                 worker_name=user.name,
                 plan_label=plan_labels.get(payload.plan_id, payload.plan_id),
@@ -267,8 +269,10 @@ def create_policy(payload: PolicyCreateRequest, db: Session = Depends(get_db)) -
                 max_payout=float(policy.max_weekly_payout),
                 zone_name=zone.zone_name if zone else "your zone",
             )
-    except Exception:
-        pass
+            if not wa_result.get("sent"):
+                log.warning("Policy-activated WhatsApp not sent for policy_id=%s: %s", policy.id, wa_result)
+    except Exception as exc:
+        log.exception("Policy-activated WhatsApp failed for policy_id=%s: %s", policy.id, exc)
 
     return {"policy_id": policy.id, "status": policy.status}
 

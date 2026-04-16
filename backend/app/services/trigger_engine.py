@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import time
+import logging
 
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
@@ -28,6 +29,8 @@ from app.services.parametric_rules import (
 )
 from app.services.payout_service import estimate_payout, mock_razorpay_transfer
 from app.services.whatsapp_service import notify_claim_created, notify_claim_paid
+
+log = logging.getLogger(__name__)
 
 
 def find_impacted_policies(db: Session, zone_id: int, started_at: datetime, ended_at: datetime) -> list[tuple[WorkerProfile, Policy]]:
@@ -117,7 +120,7 @@ def _auto_initiate_payout(db: Session, claim: Claim, worker: WorkerProfile) -> P
                 # Keep WhatsApp chronology clear in chat threads:
                 # claim-created notification is sent first, then payout confirmation.
                 time.sleep(1.2)
-                notify_claim_paid(
+                wa_result = notify_claim_paid(
                     to_phone=user.phone,
                     worker_name=user.name,
                     claim_type=claim.claim_type,
@@ -125,8 +128,10 @@ def _auto_initiate_payout(db: Session, claim: Claim, worker: WorkerProfile) -> P
                     gateway_ref=gateway_result["payment_id"],
                     upi_id=worker.payout_upi,
                 )
-        except Exception:
-            pass
+                if not wa_result.get("sent"):
+                    log.warning("Claim-paid WhatsApp not sent for claim_id=%s: %s", claim.id, wa_result)
+        except Exception as exc:
+            log.exception("Claim-paid WhatsApp failed for claim_id=%s: %s", claim.id, exc)
 
     return payout
 
@@ -211,7 +216,7 @@ def create_claim_candidates(
             user = worker.user
             zone = db.scalar(select(Zone).where(Zone.id == event.zone_id))
             if user and user.phone:
-                notify_claim_created(
+                wa_result = notify_claim_created(
                     to_phone=user.phone,
                     worker_name=user.name or "Worker",
                     claim_type=claim.claim_type,
@@ -221,8 +226,10 @@ def create_claim_candidates(
                     review_status=fraud_review,
                     expected_payout=float(claim.approved_payout),
                 )
-        except Exception:
-            pass
+                if not wa_result.get("sent"):
+                    log.warning("Claim-created WhatsApp not sent for claim_id=%s: %s", claim.id, wa_result)
+        except Exception as exc:
+            log.exception("Claim-created WhatsApp failed for claim_id=%s: %s", claim.id, exc)
 
         if claim.status == "approved":
             _auto_initiate_payout(db, claim, worker)

@@ -7,7 +7,11 @@ from datetime import datetime, timezone
 
 from app.models.entities import DataConsent, User, WorkerProfile, Zone
 from app.schemas.common import WorkerProfileCreate, WorkerProfileResponse
+import logging
+
 from app.services.whatsapp_service import notify_registration_welcome
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/workers", tags=["workers"])
 
@@ -60,7 +64,6 @@ def create_worker_profile(payload: WorkerProfileCreate, db: Session = Depends(ge
         db.flush()
 
     user = db.scalar(select(User).where(User.phone == payload.phone))
-    is_new_user = user is None
     if user is None:
         user = User(name=payload.name, phone=payload.phone, email=payload.email, city=payload.city)
         db.add(user)
@@ -72,7 +75,6 @@ def create_worker_profile(payload: WorkerProfileCreate, db: Session = Depends(ge
         user.city = payload.city
 
     profile = db.scalar(select(WorkerProfile).where(WorkerProfile.user_id == user.id))
-    is_new_profile = profile is None
     if profile is None:
         profile = WorkerProfile(
             user_id=user.id,
@@ -120,17 +122,19 @@ def create_worker_profile(payload: WorkerProfileCreate, db: Session = Depends(ge
     db.commit()
     db.refresh(profile)
 
-    # Send onboarding WhatsApp only on first successful registration.
-    if is_new_user or is_new_profile:
-        try:
-            notify_registration_welcome(
-                to_phone=payload.phone,
-                worker_name=payload.name,
-                city=payload.city,
-                zone_name=payload.primary_zone,
-            )
-        except Exception:
-            pass
+    # Demo mode behavior: send WhatsApp on every successful registration/profile save.
+    # If override-to is active, all messages still route to that joined sandbox number.
+    try:
+        wa_result = notify_registration_welcome(
+            to_phone=payload.phone,
+            worker_name=payload.name,
+            city=payload.city,
+            zone_name=payload.primary_zone,
+        )
+        if not wa_result.get("sent"):
+            log.warning("Registration WhatsApp not sent: %s", wa_result)
+    except Exception as exc:
+        log.exception("Registration WhatsApp failed: %s", exc)
 
     return WorkerProfileResponse(worker_id=profile.id, user_id=user.id, risk_score=profile.risk_score)
 
