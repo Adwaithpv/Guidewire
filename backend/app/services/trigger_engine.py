@@ -165,6 +165,10 @@ def create_claim_candidates(
         estimated_loss, payout = estimate_payout(
             worker.avg_weekly_income, disrupted_hours, budget
         )
+        is_her_plan = (policy.plan_name or "").startswith("her-")
+        is_night = event.started_at.hour >= 20 or event.started_at.hour < 6
+        if is_her_plan and is_night:
+            payout = round(min(payout * 1.3, budget), 2)
         match = TriggerMatch(
             event_id=event.id,
             worker_id=worker.id,

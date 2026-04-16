@@ -22,11 +22,13 @@ class WorkerProfileCreate(BaseModel):
     city: str
     persona_type: str = "grocery"
     platform_name: str
+    platform_names: list[str] = Field(default_factory=list)
     avg_weekly_income: float = Field(gt=0)
     primary_zone: str
     shift_type: str
     gps_enabled: bool = False
     payout_upi: str
+    gender: str = "prefer_not_to_say"
     gps_consent: bool = True
     upi_consent: bool = True
     platform_data_consent: bool = True

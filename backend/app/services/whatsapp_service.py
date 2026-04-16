@@ -22,6 +22,7 @@ log = logging.getLogger(__name__)
 TWILIO_SID = (os.getenv("TWILIO_ACCOUNT_SID") or "").strip()
 TWILIO_TOKEN = (os.getenv("TWILIO_AUTH_TOKEN") or "").strip()
 TWILIO_WHATSAPP_FROM = (os.getenv("TWILIO_WHATSAPP_FROM") or "").strip()
+TWILIO_WHATSAPP_OVERRIDE_TO = (os.getenv("TWILIO_WHATSAPP_OVERRIDE_TO") or "").strip()
 
 _client: Any = None
 
@@ -76,7 +77,8 @@ def send_whatsapp(
             "message_preview": message[:80],
         }
 
-    to_wa = _format_phone(to_phone)
+    requested_to_wa = _format_phone(to_phone)
+    to_wa = _format_phone(TWILIO_WHATSAPP_OVERRIDE_TO) if TWILIO_WHATSAPP_OVERRIDE_TO else requested_to_wa
     from_wa = TWILIO_WHATSAPP_FROM if TWILIO_WHATSAPP_FROM.startswith("whatsapp:") else f"whatsapp:{TWILIO_WHATSAPP_FROM}"
 
     try:
@@ -91,6 +93,8 @@ def send_whatsapp(
             "sid": msg.sid,
             "status": msg.status,
             "to": to_wa,
+            "requested_to": requested_to_wa,
+            "override_active": bool(TWILIO_WHATSAPP_OVERRIDE_TO),
         }
     except Exception as e:
         log.warning("WhatsApp send failed to %s: %s", to_wa, e)
@@ -98,6 +102,8 @@ def send_whatsapp(
             "sent": False,
             "reason": str(e),
             "to": to_wa,
+            "requested_to": requested_to_wa,
+            "override_active": bool(TWILIO_WHATSAPP_OVERRIDE_TO),
         }
 
 # ---------------------------------------------------------------------------

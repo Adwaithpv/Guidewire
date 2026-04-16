@@ -6,6 +6,8 @@ type View = "landing" | "otp" | "register" | "quote" | "dashboard" | "admin";
 
 type DashboardSection = "home" | "policy" | "claims" | "live";
 type AdminSection = "overview" | "claims" | "fraud" | "predictions" | "payouts";
+const PLATFORM_OPTIONS = ["Zepto", "Swiggy", "Blinkit", "Instamart", "BigBasket", "Amazon", "Dunzo"];
+const SUPPORTED_CITIES = ["Bengaluru", "Mumbai", "Delhi", "Chennai", "Kolkata", "Hyderabad", "Pune", "Ahmedabad", "Jaipur", "Lucknow"];
 
 function App() {
   const [view, setView] = useState<View>("landing");
@@ -35,11 +37,13 @@ function App() {
     city: "Bengaluru",
     persona_type: "grocery",
     platform_name: "Zepto",
+    platform_names: ["Zepto"],
     avg_weekly_income: 3500,
     primary_zone: "HSR Layout",
     shift_type: "full_day",
     gps_enabled: true,
     payout_upi: "",
+    gender: "prefer_not_to_say",
   });
 
   const [loading, setLoading] = useState(false);
@@ -50,6 +54,8 @@ function App() {
   const [shiftRec, setShiftRec] = useState<any>(null);
   const [shiftRecLoading, setShiftRecLoading] = useState(false);
   const [waConfigured, setWaConfigured] = useState<boolean | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationNotice, setLocationNotice] = useState<string | null>(null);
 
   // Phase 3 state
   const [workerProtection, setWorkerProtection] = useState<any>(null);
@@ -93,10 +99,95 @@ function App() {
     }
   }, [profile?.city]);
 
+  const resolveCurrentLocation = useCallback(async () => {
+    if (!("geolocation" in navigator)) {
+      throw new Error("Location is not supported on this browser.");
+    }
+    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 60000,
+      });
+    });
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
+
+    let city = "";
+    let locality = "";
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1`,
+      );
+      const data = await res.json();
+      const addr = data?.address || {};
+      const detectedCity =
+        addr.city ||
+        addr.town ||
+        addr.county ||
+        addr.state_district ||
+        addr.state ||
+        "";
+      const detectedLocality =
+        addr.suburb ||
+        addr.neighbourhood ||
+        addr.quarter ||
+        addr.village ||
+        addr.hamlet ||
+        addr.road ||
+        "";
+
+      const matched = SUPPORTED_CITIES.find((c) => {
+        const a = String(detectedCity).toLowerCase();
+        const b = c.toLowerCase();
+        return a.includes(b) || b.includes(a);
+      });
+      city = matched || formData.city || "Bengaluru";
+      locality = String(detectedLocality || "").trim();
+    } catch {
+      city = formData.city || "Bengaluru";
+      locality = "";
+    }
+
+    const zone_name = locality ? `${locality}, ${city}` : `Current location, ${city}`;
+    return { city, zone_name };
+  }, [formData.city]);
+
+  const useCurrentLocationForRegistration = useCallback(async () => {
+    setLocationLoading(true);
+    setLocationNotice(null);
+    try {
+      const loc = await resolveCurrentLocation();
+      setFormData((prev) => ({
+        ...prev,
+        city: loc.city,
+        primary_zone: loc.zone_name,
+      }));
+      setLocationNotice(`Detected: ${loc.zone_name}`);
+    } catch (e) {
+      setLocationNotice(
+        e instanceof Error
+          ? e.message
+          : "Could not fetch location. Please allow location permission and try again.",
+      );
+    } finally {
+      setLocationLoading(false);
+    }
+  }, [resolveCurrentLocation]);
+
   const fetchShiftRecommendation = useCallback(async () => {
     if (!workerId) return;
     setShiftRecLoading(true);
+    setLocationNotice(null);
     try {
+      try {
+        const loc = await resolveCurrentLocation();
+        await api.updateWorkerLocation(workerId, loc);
+        setProfile((prev: any) => (prev ? { ...prev, city: loc.city, zone_name: loc.zone_name } : prev));
+      } catch {
+        // If location is blocked, continue with saved profile location.
+      }
+
       const rec = await api.getShiftRecommendation(workerId);
       setShiftRec(rec);
     } catch (e) {
@@ -104,7 +195,7 @@ function App() {
     } finally {
       setShiftRecLoading(false);
     }
-  }, [workerId]);
+  }, [workerId, resolveCurrentLocation]);
 
   useEffect(() => {
     let interval: number;
@@ -182,8 +273,12 @@ function App() {
     e.preventDefault();
     setLoading(true);
     try {
+      const selectedPlatforms = (formData.platform_names || []).filter(Boolean);
+      const normalizedPlatforms = selectedPlatforms.length > 0 ? selectedPlatforms : [formData.platform_name || "Zepto"];
       const res = await api.createProfile({
         ...formData,
+        platform_name: normalizedPlatforms[0],
+        platform_names: normalizedPlatforms,
         avg_weekly_income: Number(formData.avg_weekly_income),
       });
       setWorkerId(res.worker_id);
@@ -240,7 +335,7 @@ function App() {
         plan_id: selectedPlan.plan_id,
         premium_weekly: selectedPlan.premium_weekly,
         max_weekly_payout: selectedPlan.max_weekly_payout,
-        covered_events: ["heavy_rain", "flood", "aqi_severe", "curfew", "platform_outage"],
+        covered_events: plansQuote?.covered_events ?? ["heavy_rain", "flood", "aqi_severe", "curfew", "platform_outage"],
         auto_renew: true,
       });
       setView("dashboard");
@@ -321,7 +416,7 @@ function App() {
             ended_at: now.toISOString(),
             severity: "moderate",
             source_name: "Mock Platform Monitor",
-            source_payload: { platform: profile.platform_name, downtime_min: 45 },
+            source_payload: { platform: primaryPlatform, platforms: platformNames, downtime_min: 45 },
             worker_id: workerId ?? undefined,
           });
           break;
@@ -361,6 +456,15 @@ function App() {
   };
   const statusColor = (s: string) =>
     s === "paid" ? "success" : s === "approved" ? "success" : s === "fraud_check" ? "pending" : "";
+
+  const platformNames = (profile?.platform_names && profile.platform_names.length > 0)
+    ? profile.platform_names
+    : String(profile?.platform_name || "")
+      .split(",")
+      .map((p: string) => p.trim())
+      .filter(Boolean);
+  const primaryPlatform = platformNames[0] || "Platform";
+  const platformSummary = platformNames.length > 1 ? `${platformNames[0]} +${platformNames.length - 1}` : primaryPlatform;
 
   const fetchAdminData = useCallback(async () => {
     setAdminLoading(true);
@@ -687,23 +791,72 @@ function App() {
               <div className="form-group">
                 <label>City</label>
                 <select value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })}>
-                  {["Bengaluru", "Mumbai", "Delhi", "Chennai", "Kolkata", "Hyderabad", "Pune", "Ahmedabad", "Jaipur", "Lucknow"].map(c => (
+                  {SUPPORTED_CITIES.map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
               </div>
             </div>
+            <div className="form-group">
+              <label>Gender</label>
+              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                {([["male", "Male"], ["female", "Female"], ["non_binary", "Non-binary"], ["prefer_not_to_say", "Prefer not to say"]] as const).map(([val, lbl]) => (
+                  <label key={val} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.85rem", cursor: "pointer", padding: "6px 12px", borderRadius: "10px", border: `1px solid ${formData.gender === val ? "var(--accent)" : "var(--border)"}`, background: formData.gender === val ? "var(--accent-light)" : "var(--surface)" }}>
+                    <input type="radio" name="gender" value={val} checked={formData.gender === val} onChange={() => setFormData({ ...formData, gender: val })} style={{ width: "auto" }} />
+                    {lbl}
+                  </label>
+                ))}
+              </div>
+              {formData.gender === "female" && (
+                <div style={{ marginTop: "8px", padding: "10px 14px", borderRadius: "10px", background: "linear-gradient(135deg, rgba(236,72,153,0.12), rgba(168,85,247,0.10))", border: "1px solid rgba(236,72,153,0.25)", fontSize: "0.82rem", color: "var(--text-primary)" }}>
+                  <strong>Her Shield</strong> — You qualify for enhanced plans with safety-incident coverage, night-shift protection, health-leave triggers, and 10% subsidized premiums.
+                </div>
+              )}
+            </div>
             <div className="grid two" style={{ gap: "16px" }}>
               <div className="form-group">
-                <label>Delivery Platform</label>
-                <select value={formData.platform_name} onChange={e => setFormData({ ...formData, platform_name: e.target.value })}>
-                  <option value="Zepto">Zepto</option>
-                  <option value="Blinkit">Blinkit</option>
-                  <option value="Instamart">Swiggy Instamart</option>
-                  <option value="BigBasket">BigBasket</option>
-                  <option value="Amazon">Amazon Fresh</option>
-                  <option value="Dunzo">Dunzo</option>
-                </select>
+                <label>Delivery Platforms (select one or more)</label>
+                <div className="grid two" style={{ gap: "8px" }}>
+                  {PLATFORM_OPTIONS.map((p) => {
+                    const checked = formData.platform_names.includes(p);
+                    return (
+                      <label
+                        key={p}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          fontSize: "0.85rem",
+                          color: checked ? "var(--text-primary)" : "var(--text-secondary)",
+                          padding: "8px 10px",
+                          borderRadius: "10px",
+                          border: `1px solid ${checked ? "var(--accent)" : "var(--border)"}`,
+                          background: checked ? "var(--accent-light)" : "var(--surface)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            const has = formData.platform_names.includes(p);
+                            const next = has
+                              ? formData.platform_names.filter((x) => x !== p)
+                              : [...formData.platform_names, p];
+                            const normalized = next.length > 0 ? next : [p];
+                            setFormData({
+                              ...formData,
+                              platform_names: normalized,
+                              platform_name: normalized[0],
+                            });
+                          }}
+                          style={{ width: "auto" }}
+                        />
+                        {p}
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
               <div className="form-group">
                 <label>Persona Type</label>
@@ -724,6 +877,24 @@ function App() {
                 <input value={formData.primary_zone} onChange={e => setFormData({ ...formData, primary_zone: e.target.value })} placeholder="HSR Layout" required />
               </div>
             </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+              <span className="subtitle" style={{ fontSize: "0.82rem" }}>
+                Let us auto-fill city and zone using your current GPS location.
+              </span>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={useCurrentLocationForRegistration}
+                disabled={locationLoading}
+                style={{ fontSize: "0.8rem", padding: "8px 12px" }}
+              >
+                {locationLoading ? "Detecting…" : "Use current location"}
+              </button>
+            </div>
+            {locationNotice && (
+              <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>{locationNotice}</div>
+            )}
+
             <div className="grid two" style={{ gap: "16px" }}>
               <div className="form-group">
                 <label>Shift Type</label>
@@ -981,7 +1152,8 @@ function App() {
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 {planList.map((plan: any, planIdx: number) => {
                   const isSelected = selectedPlan?.plan_id === plan.plan_id;
-                  const isRecommended = plan.plan_id === "standard";
+                  const isHerShield = (plan.plan_id as string).startsWith("her-");
+                  const isRecommended = plan.plan_id === "standard" || plan.plan_id === "her-standard";
                   const tierClass = planIdx % 3 === 0 ? "plan-tier-a" : planIdx % 3 === 1 ? "plan-tier-b" : "plan-tier-c";
                   return (
                     <button
@@ -992,10 +1164,25 @@ function App() {
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "8px" }}>
                         <div>
-                          <div style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif', fontWeight: 800, fontSize: "1.02rem", color: "var(--navy)" }}>
-                            {plan.label}
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif', fontWeight: 800, fontSize: "1.02rem", color: "var(--navy)" }}>
+                              {plan.label}
+                            </span>
+                            {isHerShield && (
+                              <span style={{ borderRadius: "999px", padding: "2px 8px", fontSize: "0.6rem", fontWeight: 800, letterSpacing: "0.06em", background: "linear-gradient(135deg, rgba(236,72,153,0.15), rgba(168,85,247,0.12))", border: "1px solid rgba(236,72,153,0.3)", color: "#d946ef" }}>
+                                HER SHIELD
+                              </span>
+                            )}
                           </div>
                           <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "4px", lineHeight: 1.45 }}>{plan.description}</div>
+                          {isHerShield && (
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "6px" }}>
+                              {["Safety incident", "Night-shift 1.3x", ...(plan.plan_id === "her-full" ? ["Health leave"] : [])].map((t) => (
+                                <span key={t} style={{ fontSize: "0.65rem", padding: "2px 7px", borderRadius: "6px", background: "rgba(236,72,153,0.08)", border: "1px solid rgba(236,72,153,0.18)", color: "var(--text-secondary)", fontWeight: 600 }}>{t}</span>
+                              ))}
+                              <span style={{ fontSize: "0.65rem", padding: "2px 7px", borderRadius: "6px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.18)", color: "var(--success)", fontWeight: 600 }}>10% subsidy</span>
+                            </div>
+                          )}
                         </div>
                         {isRecommended && (
                           <span
@@ -1168,7 +1355,7 @@ function App() {
         </button>
         <div className={`worker-status ${activePolicy ? 'active' : ''}`}>
           <div style={{ fontWeight: 600, marginBottom: "4px" }}>{profile?.name}</div>
-          <div style={{ fontSize: "0.8rem", color: "var(--text-dim)", marginBottom: "6px" }}>{profile?.platform_name} • {profile?.zone_name}</div>
+          <div style={{ fontSize: "0.8rem", color: "var(--text-dim)", marginBottom: "6px" }}>{platformSummary} • {profile?.zone_name}</div>
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <span className={`status-dot ${activePolicy ? 'active' : ''}`} />
             {activePolicy ? "Protected • Weekly Shield" : "Unprotected"}
@@ -1192,7 +1379,7 @@ function App() {
             </div>
             <div className="badge success" style={{ padding: "8px 16px", fontSize: "0.85rem" }}>
               <span className="status-dot active" style={{ marginRight: "6px" }} />
-              {profile?.platform_name} Shift Active
+              {platformSummary} Shift Active
             </div>
           </header>
 
@@ -1264,6 +1451,12 @@ function App() {
                 <span>Premium: ₹{workerProtection.active_coverage.premium_weekly}/wk</span>
                 <span>Max payout: ₹{workerProtection.active_coverage.max_weekly_payout}/wk</span>
               </div>
+              {(activePolicy?.plan_name || "").startsWith("her-") && (
+                <div style={{ marginTop: "10px", display: "flex", alignItems: "center", gap: "6px", fontSize: "0.76rem" }}>
+                  <span style={{ borderRadius: "999px", padding: "2px 8px", fontSize: "0.6rem", fontWeight: 800, background: "linear-gradient(135deg, rgba(236,72,153,0.15), rgba(168,85,247,0.12))", border: "1px solid rgba(236,72,153,0.3)", color: "#d946ef" }}>HER SHIELD</span>
+                  <span style={{ color: "var(--text-secondary)" }}>Safety + night-shift + subsidy active</span>
+                </div>
+              )}
             </div>
           )}
 
@@ -1552,7 +1745,7 @@ function App() {
                   id: "outage",
                   icon: "📡",
                   label: "Platform Outage",
-                  desc: `${profile?.platform_name} down 45min`,
+                  desc: `${primaryPlatform} down 45min`,
                   color: "hsl(270, 55%, 48%)",
                   iconBg: "hsla(270, 60%, 95%, 1)",
                 },
@@ -1749,6 +1942,20 @@ function App() {
                     </div>
                   </div>
                 </div>
+                {(activePolicy.plan_name || "").startsWith("her-") && (
+                  <div style={{ marginTop: "16px", padding: "12px 16px", borderRadius: "12px", background: "linear-gradient(135deg, rgba(236,72,153,0.10), rgba(168,85,247,0.08))", border: "1px solid rgba(236,72,153,0.22)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                      <span style={{ borderRadius: "999px", padding: "2px 10px", fontSize: "0.65rem", fontWeight: 800, letterSpacing: "0.06em", background: "linear-gradient(135deg, rgba(236,72,153,0.18), rgba(168,85,247,0.14))", border: "1px solid rgba(236,72,153,0.3)", color: "#d946ef" }}>HER SHIELD</span>
+                      <span style={{ fontSize: "0.82rem", fontWeight: 700 }}>Enhanced coverage for women riders</span>
+                    </div>
+                    <ul style={{ margin: 0, paddingLeft: "18px", fontSize: "0.8rem", color: "var(--text-secondary)", lineHeight: 1.7 }}>
+                      <li>Safety-incident trigger — coverage for forced downtime from unsafe situations</li>
+                      <li>Night-shift 1.3x payout multiplier (8 PM – 6 AM)</li>
+                      {activePolicy.plan_name === "her-full" && <li>Health-leave trigger — small fixed payout for documented health days</li>}
+                      <li>10% premium subsidy reflecting systemic risk women face</li>
+                    </ul>
+                  </div>
+                )}
                 <div style={{ marginTop: "24px" }}>
                   <span className="stat-label">Covered parametric events</span>
                   <div className="event-pills" style={{ marginTop: "10px" }}>
@@ -1757,6 +1964,15 @@ function App() {
                         {e}
                       </span>
                     ))}
+                    {(activePolicy.plan_name || "").startsWith("her-") && (
+                      <>
+                        <span className="event-pill" style={{ background: "rgba(236,72,153,0.10)", borderColor: "rgba(236,72,153,0.25)", color: "#d946ef" }}>Safety incident</span>
+                        <span className="event-pill" style={{ background: "rgba(236,72,153,0.10)", borderColor: "rgba(236,72,153,0.25)", color: "#d946ef" }}>Night-shift disruption</span>
+                        {activePolicy.plan_name === "her-full" && (
+                          <span className="event-pill" style={{ background: "rgba(236,72,153,0.10)", borderColor: "rgba(236,72,153,0.25)", color: "#d946ef" }}>Health leave</span>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
                 <p style={{ fontSize: "0.82rem", color: "var(--text-dim)", marginTop: "20px", marginBottom: 0 }}>

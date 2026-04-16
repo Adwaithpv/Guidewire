@@ -30,6 +30,33 @@ PLANS: dict[str, dict[str, Any]] = {
         "min_premium": 35.0,
         "max_premium": 120.0,
     },
+    "her-basic": {
+        "label": "Her Shield Lite",
+        "description": "Safety-first entry cover with subsidized premiums for women gig workers.",
+        "coverage_pct": 0.25,
+        "min_premium": 14.0,
+        "max_premium": 45.0,
+        "subsidy_pct": 0.10,
+        "gender": "female",
+    },
+    "her-standard": {
+        "label": "Her Shield",
+        "description": "Balanced protection with safety-incident and night-shift coverage for women riders.",
+        "coverage_pct": 0.40,
+        "min_premium": 23.0,
+        "max_premium": 72.0,
+        "subsidy_pct": 0.10,
+        "gender": "female",
+    },
+    "her-full": {
+        "label": "Her Shield Max",
+        "description": "Maximum coverage including harassment-downtime and health-leave triggers for women.",
+        "coverage_pct": 0.55,
+        "min_premium": 32.0,
+        "max_premium": 110.0,
+        "subsidy_pct": 0.10,
+        "gender": "female",
+    },
 }
 
 _CITY_RISK: dict[str, float] = {
@@ -160,11 +187,13 @@ def quote_plan(
     max_payout = float(avg_weekly_income) * float(plan["coverage_pct"])
     actuarial = max_payout * risk_rate
 
+    subsidy = float(plan.get("subsidy_pct", 0))
+    if subsidy > 0:
+        actuarial *= (1.0 - subsidy)
+
     floor = float(plan["min_premium"])
     ceiling = float(plan["max_premium"])
     premium = float(max(floor, min(ceiling, round(actuarial, 2))))
-    # At realistic incomes, high exposure can hit plan ceilings by design; this is an
-    # affordability cap for workers, not a model flaw.
     return {
         "plan_id": plan_id,
         "label": str(plan["label"]),
@@ -179,6 +208,16 @@ def quote_plan(
     }
 
 
+_GENDER_PLAN_MAP: dict[str, tuple[str, ...]] = {
+    "female": ("her-basic", "her-standard", "her-full"),
+}
+_DEFAULT_PLAN_IDS: tuple[str, ...] = ("basic", "standard", "full")
+
+
+def plans_for_gender(gender: str | None) -> tuple[str, ...]:
+    return _GENDER_PLAN_MAP.get((gender or "").lower(), _DEFAULT_PLAN_IDS)
+
+
 def quote_all_plans(
     rain_risk: float,
     flood_risk: float,
@@ -187,7 +226,9 @@ def quote_all_plans(
     shift_exposure: float,
     avg_weekly_income: float,
     city: str,
+    gender: str | None = None,
 ) -> list[dict[str, Any]]:
+    plan_ids = plans_for_gender(gender)
     return [
         quote_plan(
             plan_id,
@@ -199,7 +240,7 @@ def quote_all_plans(
             avg_weekly_income,
             city,
         )
-        for plan_id in ("basic", "standard", "full")
+        for plan_id in plan_ids
     ]
 
 

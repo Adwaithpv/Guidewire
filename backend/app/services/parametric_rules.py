@@ -124,6 +124,18 @@ def event_satisfies_trigger_index(event: DisruptionEvent, trigger: PolicyTrigger
     if et == "curfew":
         return True
 
+    if et == "safety_incident":
+        severity = payload.get("severity", "moderate")
+        severity_rank = {"low": 1, "moderate": 2, "high": 3, "severe": 4}
+        return severity_rank.get(severity, 2) >= th
+
+    if et == "night_shift_disruption":
+        return True
+
+    if et == "health_leave":
+        days = float(payload.get("leave_days") or 1)
+        return days >= th
+
     return True
 
 

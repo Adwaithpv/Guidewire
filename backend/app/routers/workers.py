@@ -12,8 +12,47 @@ from app.services.whatsapp_service import notify_registration_welcome
 router = APIRouter(prefix="/workers", tags=["workers"])
 
 
+def _normalize_platforms(platform_name: str, platform_names: list[str] | None) -> list[str]:
+    raw = list(platform_names or [])
+    if platform_name:
+        raw.insert(0, platform_name)
+    out: list[str] = []
+    seen: set[str] = set()
+    for p in raw:
+        label = (p or "").strip()
+        if not label:
+            continue
+        key = label.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(label)
+    return out or ["Unknown"]
+
+
+def _parse_platforms_from_storage(platform_name: str | None) -> list[str]:
+    if not platform_name:
+        return ["Unknown"]
+    parts = [part.strip() for part in platform_name.replace("|", ",").split(",")]
+    clean = [p for p in parts if p]
+    if not clean:
+        return ["Unknown"]
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for p in clean:
+        key = p.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(p)
+    return deduped or ["Unknown"]
+
+
 @router.post("/profile", response_model=WorkerProfileResponse)
 def create_worker_profile(payload: WorkerProfileCreate, db: Session = Depends(get_db)) -> WorkerProfileResponse:
+    normalized_platforms = _normalize_platforms(payload.platform_name, payload.platform_names)
+    platform_storage = ", ".join(normalized_platforms)
+
     zone = db.scalar(select(Zone).where(Zone.zone_name == payload.primary_zone))
     if zone is None:
         zone = Zone(city=payload.city, zone_name=payload.primary_zone, default_risk_level=0.35)
@@ -38,23 +77,25 @@ def create_worker_profile(payload: WorkerProfileCreate, db: Session = Depends(ge
         profile = WorkerProfile(
             user_id=user.id,
             persona_type=payload.persona_type,
-            platform_name=payload.platform_name,
+            platform_name=platform_storage,
             avg_weekly_income=payload.avg_weekly_income,
             primary_zone_id=zone.id,
             shift_type=payload.shift_type,
             gps_enabled=payload.gps_enabled,
             payout_upi=payload.payout_upi,
+            gender=payload.gender,
             risk_score=zone.default_risk_level,
         )
         db.add(profile)
     else:
         profile.persona_type = payload.persona_type
-        profile.platform_name = payload.platform_name
+        profile.platform_name = platform_storage
         profile.avg_weekly_income = payload.avg_weekly_income
         profile.primary_zone_id = zone.id
         profile.shift_type = payload.shift_type
         profile.gps_enabled = payload.gps_enabled
         profile.payout_upi = payload.payout_upi
+        profile.gender = payload.gender
 
     db.flush()
     consent = db.scalar(select(DataConsent).where(DataConsent.worker_id == profile.id))
@@ -102,13 +143,16 @@ def get_worker_profile(worker_id: int, db: Session = Depends(get_db)) -> dict:
     zone = db.scalar(select(Zone).where(Zone.id == profile.primary_zone_id))
     user = db.scalar(select(User).where(User.id == profile.user_id))
     consent = db.scalar(select(DataConsent).where(DataConsent.worker_id == profile.id))
+    platform_names = _parse_platforms_from_storage(profile.platform_name)
     return {
         "id": profile.id,
         "user_id": profile.user_id,
         "name": user.name if user else "Worker",
         "phone": user.phone if user else "",
         "persona_type": profile.persona_type,
-        "platform_name": profile.platform_name,
+        "platform_name": platform_names[0],
+        "platform_names": platform_names,
+        "gender": profile.gender or "prefer_not_to_say",
         "avg_weekly_income": profile.avg_weekly_income,
         "city": zone.city if zone else "",
         "zone_name": zone.zone_name if zone else None,
@@ -134,11 +178,50 @@ def list_workers(db: Session = Depends(get_db)) -> list[dict]:
     for p in profiles:
         user = db.scalar(select(User).where(User.id == p.user_id))
         zone = db.scalar(select(Zone).where(Zone.id == p.primary_zone_id))
+        platform_names = _parse_platforms_from_storage(p.platform_name)
         results.append({
             "id": p.id,
             "name": user.name if user else "Worker",
-            "platform_name": p.platform_name,
+            "platform_name": platform_names[0],
+            "platform_names": platform_names,
+            "gender": p.gender or "prefer_not_to_say",
             "city": zone.city if zone else "",
             "risk_score": p.risk_score,
         })
     return results
+
+
+@router.post("/profile/{worker_id}/location")
+def update_worker_location(worker_id: int, payload: dict, db: Session = Depends(get_db)) -> dict:
+    profile = db.scalar(select(WorkerProfile).where(WorkerProfile.id == worker_id))
+    if not profile:
+        raise HTTPException(status_code=404, detail="Worker not found")
+
+    city = str(payload.get("city") or "").strip()
+    zone_name = str(payload.get("zone_name") or "").strip()
+    if not city or not zone_name:
+        raise HTTPException(status_code=400, detail="city and zone_name are required")
+
+    zone = db.scalar(select(Zone).where(Zone.zone_name == zone_name))
+    if zone is None:
+        zone = Zone(
+            city=city,
+            zone_name=zone_name,
+            default_risk_level=profile.risk_score if profile.risk_score > 0 else 0.35,
+        )
+        db.add(zone)
+        db.flush()
+    elif zone.city != city:
+        zone.city = city
+
+    profile.primary_zone_id = zone.id
+    user = db.scalar(select(User).where(User.id == profile.user_id))
+    if user is not None:
+        user.city = city
+
+    db.commit()
+    return {
+        "worker_id": profile.id,
+        "city": city,
+        "zone_name": zone.zone_name,
+    }

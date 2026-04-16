@@ -45,6 +45,7 @@ class WorkerProfile(Base):
     shift_type: Mapped[str] = mapped_column(String(50))
     gps_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     payout_upi: Mapped[str] = mapped_column(String(120))
+    gender: Mapped[str | None] = mapped_column(String(20), nullable=True, default="prefer_not_to_say")
     risk_score: Mapped[float] = mapped_column(Float, default=0.0)
 
     user: Mapped[User] = relationship()

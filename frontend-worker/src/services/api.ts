@@ -7,11 +7,18 @@ export type WorkerPayload = {
   city: string;
   persona_type: string;
   platform_name: string;
+  platform_names: string[];
   avg_weekly_income: number;
   primary_zone: string;
   shift_type: string;
   gps_enabled: boolean;
   payout_upi: string;
+  gender?: string;
+};
+
+export type WorkerLocationPayload = {
+  city: string;
+  zone_name: string;
 };
 
 export type RiskQuotePayload = {
@@ -68,6 +75,12 @@ export const api = {
     }),
   getProfile: (workerId: number) =>
     request(`${API_BASE}/workers/profile/${workerId}`),
+  updateWorkerLocation: (workerId: number, data: WorkerLocationPayload) =>
+    request(`${API_BASE}/workers/profile/${workerId}/location`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
 
   // Risk
   getRiskQuote: (data: RiskQuotePayload) =>

@@ -130,6 +130,7 @@ def policy_quote_plans(
         worker.avg_weekly_income,
         city,
     )
+    gender = getattr(worker, "gender", None) or "prefer_not_to_say"
     actuarial_plans = quote_all_plans(
         live.rain_risk,
         live.flood_risk,
@@ -138,6 +139,7 @@ def policy_quote_plans(
         shift_exposure,
         worker.avg_weekly_income,
         city,
+        gender=gender,
     )
     plans: list[PlanQuote] = []
     for p in actuarial_plans:
@@ -163,13 +165,17 @@ def policy_quote_plans(
             )
         )
 
+    covered = ["heavy_rain", "flood", "aqi_severe", "curfew", "platform_outage"]
+    if gender == "female":
+        covered.extend(["safety_incident", "night_shift_disruption", "health_leave"])
+
     return AllPlansQuoteResponse(
         worker_id=worker_id,
         city=city,
         composite_risk=round(composite, 4),
         risk_level=risk_level,
         plans=plans,
-        covered_events=["heavy_rain", "flood", "aqi_severe", "curfew", "platform_outage"],
+        covered_events=covered,
         exclusions=["health", "life", "accident", "vehicle_repair"],
         live_factors=live,
         fetched_at=live.fetched_at,
@@ -232,7 +238,7 @@ def create_policy(payload: PolicyCreateRequest, db: Session = Depends(get_db)) -
     )
     db.add(policy)
     db.flush()
-    for trigger_type, threshold in default_triggers():
+    for trigger_type, threshold in default_triggers(payload.plan_id):
         if trigger_type in payload.covered_events:
             db.add(
                 PolicyTrigger(
@@ -248,7 +254,10 @@ def create_policy(payload: PolicyCreateRequest, db: Session = Depends(get_db)) -
     try:
         from app.services.whatsapp_service import notify_policy_activated
         user = worker.user
-        plan_labels = {"basic": "Basic Shield", "standard": "Standard Shield", "full": "Full Shield"}
+        plan_labels = {
+            "basic": "Basic Shield", "standard": "Standard Shield", "full": "Full Shield",
+            "her-basic": "Her Shield Lite", "her-standard": "Her Shield", "her-full": "Her Shield Max",
+        }
         if user and user.phone:
             notify_policy_activated(
                 to_phone=user.phone,
