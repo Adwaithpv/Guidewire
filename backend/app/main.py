@@ -3,6 +3,7 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from app.database import engine
 from app.models import Base
@@ -40,9 +41,33 @@ app.add_middleware(
 )
 
 
+def _ensure_sqlite_columns() -> None:
+    """
+    Render/free-tier deployments often keep an existing SQLite file.
+    SQLAlchemy's create_all() won't add new columns, so we do a tiny, safe
+    one-way migration for additive columns needed by newer versions.
+    """
+    try:
+        if not str(engine.url).startswith("sqlite"):
+            return
+        with engine.begin() as conn:
+            cols = conn.exec_driver_sql("PRAGMA table_info(worker_profiles)").fetchall()
+            col_names = {str(r[1]) for r in cols}  # row[1] = name
+            if "gender" not in col_names:
+                conn.execute(
+                    text(
+                        "ALTER TABLE worker_profiles ADD COLUMN gender VARCHAR(20) DEFAULT 'prefer_not_to_say'"
+                    )
+                )
+    except Exception:
+        # Never fail startup for best-effort migrations in demo mode.
+        return
+
+
 @app.on_event("startup")
 def startup() -> None:
     Base.metadata.create_all(bind=engine)
+    _ensure_sqlite_columns()
     from app.ml.premium_model import model
     model.train()
     log.info("SurakshaShift Phase 3 API ready. ML model trained.")
