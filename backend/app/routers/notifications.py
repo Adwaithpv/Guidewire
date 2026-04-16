@@ -17,6 +17,7 @@ from app.models.entities import Claim, Policy, User, WorkerProfile, Zone
 from app.services.risk_service import fetch_live_risk_factors
 from app.services.shift_guardian_service import generate_shift_recommendation
 from app.services.whatsapp_service import (
+    check_message_status,
     is_configured,
     notify_policy_activated,
     notify_shift_guardian,
@@ -103,6 +104,12 @@ def whatsapp_status() -> dict:
 def test_whatsapp(payload: WhatsAppTestRequest) -> dict:
     result = send_whatsapp(payload.phone, payload.message)
     return result
+
+
+@router.get("/whatsapp/message-status/{message_sid}")
+def get_message_status(message_sid: str) -> dict:
+    """Check actual delivery status of a Twilio message by SID."""
+    return check_message_status(message_sid)
 
 
 @router.post("/whatsapp/policy-activated/{worker_id}")

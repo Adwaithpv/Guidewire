@@ -87,14 +87,19 @@ def send_whatsapp(
             from_=from_wa,
             to=to_wa,
         )
-        log.info("WhatsApp sent: sid=%s to=%s", msg.sid, to_wa)
+        log.info("WhatsApp queued: sid=%s to=%s status=%s error_code=%s",
+                 msg.sid, to_wa, msg.status, msg.error_code)
+        actually_sent = msg.status in ("queued", "sent", "delivered", "read")
         return {
-            "sent": True,
+            "sent": actually_sent,
             "sid": msg.sid,
-            "status": msg.status,
+            "twilio_status": msg.status,
+            "error_code": msg.error_code,
+            "error_message": msg.error_message,
             "to": to_wa,
             "requested_to": requested_to_wa,
             "override_active": bool(TWILIO_WHATSAPP_OVERRIDE_TO),
+            "hint": "If status is 'queued' but nothing arrives, re-join the Twilio sandbox: send 'join <your-keyword>' to the sandbox number.",
         }
     except Exception as e:
         log.warning("WhatsApp send failed to %s: %s", to_wa, e)
@@ -105,6 +110,25 @@ def send_whatsapp(
             "requested_to": requested_to_wa,
             "override_active": bool(TWILIO_WHATSAPP_OVERRIDE_TO),
         }
+
+
+def check_message_status(message_sid: str) -> dict[str, Any]:
+    """Fetch actual delivery status of a previously sent message from Twilio."""
+    client = _get_client()
+    if client is None:
+        return {"error": "twilio_not_configured"}
+    try:
+        msg = client.messages(message_sid).fetch()
+        return {
+            "sid": msg.sid,
+            "status": msg.status,
+            "error_code": msg.error_code,
+            "error_message": msg.error_message,
+            "date_sent": str(msg.date_sent) if msg.date_sent else None,
+            "to": msg.to,
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 # ---------------------------------------------------------------------------
 # Pre-built message templates
