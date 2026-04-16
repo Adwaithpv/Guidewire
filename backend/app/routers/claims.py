@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -8,6 +9,10 @@ from app.schemas.common import ClaimsSummary, ProcessClaimResponse
 from app.services.fraud_service import evaluate_claim_fraud
 
 router = APIRouter(prefix="/claims", tags=["claims"])
+
+
+class ClaimDisputeRequest(BaseModel):
+    reason: str = "I want a manual review of this claim decision."
 
 
 @router.get("/{worker_id}")
@@ -73,3 +78,25 @@ def process_claim(claim_id: int, db: Session = Depends(get_db)) -> ProcessClaimR
     result = evaluate_claim_fraud(db, claim_id)
     db.refresh(claim)
     return ProcessClaimResponse(claim_id=claim.id, status=claim.status, approved_payout=float(claim.approved_payout))
+
+
+@router.post("/dispute/{claim_id}")
+def raise_claim_dispute(
+    claim_id: int,
+    payload: ClaimDisputeRequest,
+    db: Session = Depends(get_db),
+) -> dict:
+    claim = db.scalar(select(Claim).where(Claim.id == claim_id))
+    if claim is None:
+        raise HTTPException(status_code=404, detail="Claim not found")
+
+    # Hackathon-safe, non-destructive dispute marker:
+    # keep claim status unchanged but return a reference users can quote.
+    dispute_ref = f"DSP-{claim.id}-{int(claim.created_at.timestamp())}"
+    return {
+        "claim_id": claim.id,
+        "status": claim.status,
+        "dispute_ref": dispute_ref,
+        "message": "Dispute submitted for manual review. Our team will contact you within 24 hours.",
+        "reason_received": payload.reason,
+    }

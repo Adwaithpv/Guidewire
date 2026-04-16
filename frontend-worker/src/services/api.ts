@@ -125,6 +125,12 @@ export const api = {
     request(`${API_BASE}/claims/summary/${workerId}`),
   processClaim: (claimId: number) =>
     request(`${API_BASE}/claims/process/${claimId}`, { method: "POST" }),
+  raiseClaimDispute: (claimId: number, reason: string) =>
+    request(`${API_BASE}/claims/dispute/${claimId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    }),
 
   // Shift Guardian
   getShiftRecommendation: (workerId: number) =>

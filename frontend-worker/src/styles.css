@@ -326,8 +326,12 @@ h6 {
 .auth-panel-left {
   flex: 1;
   min-width: 0;
-  background: var(--navy);
+  background:
+    radial-gradient(circle at 18% 14%, rgba(41, 211, 255, 0.14), transparent 38%),
+    radial-gradient(circle at 82% 8%, rgba(111, 120, 255, 0.12), transparent 34%),
+    linear-gradient(165deg, #111b2f 0%, #0c1426 56%, #090f1d 100%);
   color: hsl(0, 0%, 98%);
+  border-right: 1px solid rgba(119, 149, 211, 0.22);
   padding: 48px 40px;
   display: flex;
   flex-direction: column;
@@ -396,6 +400,100 @@ h6 {
   font-size: 0.78rem;
   color: var(--text-muted);
   background: var(--bg);
+}
+.footer-link-btn {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  color: var(--accent) !important;
+  font-size: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.footer-link-btn:hover {
+  color: var(--accent-hover) !important;
+}
+
+.consent-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(19, 30, 50, 0.75);
+  border: 1px solid rgba(125, 162, 226, 0.22);
+}
+.privacy-panel {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  border: 1px solid var(--border);
+  background: rgba(16, 25, 42, 0.8);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.compliance-note {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  background: rgba(41, 211, 255, 0.08);
+  border: 1px solid rgba(41, 211, 255, 0.25);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.coverage-warning {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  background: rgba(244, 183, 64, 0.09);
+  border: 1px solid rgba(244, 183, 64, 0.28);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.price-explain-panel {
+  max-width: 1000px;
+  margin: 0 auto 18px;
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(125, 162, 226, 0.26);
+  background: rgba(19, 31, 52, 0.78);
+}
+.price-explain-panel h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+.price-explain-panel p {
+  margin: 0 0 8px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+.price-explain-panel ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.claim-reason-text {
+  margin-top: 5px;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.policy-exclusion-list {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.55;
 }
 
 /* Registration horizontal progress */

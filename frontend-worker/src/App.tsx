@@ -29,6 +29,8 @@ function App() {
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [authNotice, setAuthNotice] = useState<{ type: "success" | "info" | "error"; text: string } | null>(null);
+  const [authConsentAccepted, setAuthConsentAccepted] = useState(false);
+  const [showPrivacyNotice, setShowPrivacyNotice] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<WorkerPayload>({
@@ -53,6 +55,7 @@ function App() {
   const [simPipelineStep, setSimPipelineStep] = useState<number | null>(null);
   const [shiftRec, setShiftRec] = useState<any>(null);
   const [shiftRecLoading, setShiftRecLoading] = useState(false);
+  const [disputeSubmittingFor, setDisputeSubmittingFor] = useState<number | null>(null);
   const [waConfigured, setWaConfigured] = useState<boolean | null>(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationNotice, setLocationNotice] = useState<string | null>(null);
@@ -244,6 +247,10 @@ function App() {
   };
 
   const handleVerifyOtp = async () => {
+    if (!authConsentAccepted) {
+      setAuthNotice({ type: "error", text: "Please accept the privacy notice and consent to continue." });
+      return;
+    }
     setLoading(true);
     try {
       const res = await api.verifyOtp(phone, otp);
@@ -456,6 +463,44 @@ function App() {
   };
   const statusColor = (s: string) =>
     s === "paid" ? "success" : s === "approved" ? "success" : s === "fraud_check" ? "pending" : "";
+  const isRejectedClaim = (claim: any) =>
+    ["rejected", "declined", "fraud_rejected"].includes(String(claim?.status || "").toLowerCase());
+
+  const claimDecisionReason = (claim: any) => {
+    const status = String(claim?.status || "").toLowerCase();
+    if (status === "paid") return "Approved and payout successfully transferred to your UPI account.";
+    if (status === "approved") return "Approved and queued for payout processing.";
+    if (status === "fraud_check") return "Under manual review because risk checks flagged this claim for verification.";
+    if (isRejectedClaim(claim)) return "Rejected after verification checks. You can raise a dispute for manual reassessment.";
+    if (status === "validation_pending") return "Awaiting validation against policy window, trigger rules, and risk checks.";
+    return "Claim decision is being processed.";
+  };
+
+  const priceWhyText = (plan: any) => {
+    if (!plan) return [];
+    return [
+      `You chose ${plan.label}. This plan protects about ${(Number(plan.coverage_pct) * 100).toFixed(0)}% of your weekly income.`,
+      `Your city + live disruption risk decides the risk rate (${Number(plan.risk_rate_pct).toFixed(2)}%). Higher live risk means a higher premium.`,
+      `Your weekly premium is ₹${Number(plan.premium_weekly).toFixed(0)} and max payout is ₹${Number(plan.max_weekly_payout).toFixed(0)}.`,
+      "This product covers income loss only, not hospitalization, life cover, or vehicle repair.",
+    ];
+  };
+
+  const handleRaiseDispute = async (claim: any) => {
+    if (!claim?.id) return;
+    setDisputeSubmittingFor(claim.id);
+    try {
+      const res = await api.raiseClaimDispute(
+        claim.id,
+        "I request manual review because I disagree with this claim decision.",
+      );
+      alert(`Dispute submitted. Reference: ${res.dispute_ref}`);
+    } catch {
+      alert("Could not submit dispute right now. Please try again.");
+    } finally {
+      setDisputeSubmittingFor(null);
+    }
+  };
 
   const platformNames = (profile?.platform_names && profile.platform_names.length > 0)
     ? profile.platform_names
@@ -692,6 +737,37 @@ function App() {
                     />
                   </div>
                 </div>
+                <div className="consent-box">
+                  <label htmlFor="auth-consent" style={{ textTransform: "none", fontSize: "0.82rem", lineHeight: 1.5 }}>
+                    <input
+                      id="auth-consent"
+                      type="checkbox"
+                      checked={authConsentAccepted}
+                      onChange={(e) => setAuthConsentAccepted(e.target.checked)}
+                      style={{ width: "auto", marginRight: "8px" }}
+                    />
+                    I consent to processing my phone, profile and policy data for authentication, policy servicing, and claim handling as per the Privacy Notice.
+                  </label>
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    onClick={() => setShowPrivacyNotice((s) => !s)}
+                    style={{ alignSelf: "flex-start", padding: "6px 10px", fontSize: "0.76rem" }}
+                  >
+                    {showPrivacyNotice ? "Hide Privacy Notice" : "View Privacy Notice"}
+                  </button>
+                  {showPrivacyNotice && (
+                    <div className="privacy-panel">
+                      <strong>Privacy Notice (Hackathon Demo)</strong>
+                      <ul style={{ margin: "8px 0 0 18px", padding: 0 }}>
+                        <li>We collect phone number, work profile, city/zone, and payout UPI only for insurance operations.</li>
+                        <li>We do not collect Aadhaar or e-Shram UAN in this demo.</li>
+                        <li>Data is used for OTP login, pricing, policy activation, and claim processing.</li>
+                        <li>You may request correction/deletion by raising support or dispute in-app.</li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
                 {!otpSent ? (
                   <>
                     <button onClick={handleSendOtp} disabled={loading || phone.length < 10} style={{ width: "100%" }}>
@@ -732,7 +808,7 @@ function App() {
                         className="otp-input"
                       />
                     </div>
-                    <button onClick={handleVerifyOtp} disabled={loading || otp.length < 6} style={{ width: "100%" }}>
+                    <button onClick={handleVerifyOtp} disabled={loading || otp.length < 6 || !authConsentAccepted} style={{ width: "100%" }}>
                       {loading ? "Verifying..." : "Verify & Continue →"}
                     </button>
                     {authNotice && (
@@ -760,6 +836,14 @@ function App() {
         </div>
         <footer className="auth-footer">
           Live risk inputs: OpenWeatherMap · WAQI · NewsData.io / GNews (when configured) · IMD-aligned city weights in pricing engine
+          {" · "}
+          <button
+            type="button"
+            className="footer-link-btn"
+            onClick={() => setShowPrivacyNotice((s) => !s)}
+          >
+            Privacy Notice
+          </button>
         </footer>
       </>
     );
@@ -768,6 +852,19 @@ function App() {
   // ═══════════════════════════════════════════════════════════════
   //  VIEW: REGISTRATION FORM
   // ═══════════════════════════════════════════════════════════════
+  if (view === "register" && !authConsentAccepted) {
+    return (
+      <div className="app-container center-view" style={{ padding: "24px" }}>
+        <div className="card wizard-card">
+          <h2 style={{ marginBottom: "8px" }}>Consent required</h2>
+          <p className="subtitle" style={{ marginBottom: "14px" }}>
+            Please review and accept the privacy notice in sign-in before opening the profile form.
+          </p>
+          <button type="button" onClick={() => setView("otp")}>Back to sign-in</button>
+        </div>
+      </div>
+    );
+  }
   if (view === "register") {
     return (
       <div className="app-container center-view">
@@ -783,6 +880,9 @@ function App() {
             <p className="subtitle">This helps our AI calculate your personalized premium</p>
           </div>
           <form className="wizard-body" onSubmit={handleRegister}>
+            <div className="compliance-note">
+              <strong>Worker classification:</strong> Platform-based gig worker (delivery / on-demand logistics) under Social Security Code-aligned demo scope.
+            </div>
             <div className="grid two" style={{ gap: "16px" }}>
               <div className="form-group">
                 <label>Full Name</label>
@@ -916,6 +1016,10 @@ function App() {
               <input type="checkbox" checked={formData.gps_enabled} onChange={e => setFormData({ ...formData, gps_enabled: e.target.checked })} style={{ width: "auto" }} id="gps-check" />
               <label htmlFor="gps-check" style={{ textTransform: "none", fontSize: "0.9rem" }}>Enable GPS validation for faster claim approvals</label>
             </div>
+            <div className="coverage-warning">
+              <strong>Coverage clarification:</strong> SurakshaShift is <strong>income protection only</strong> for covered disruption events.
+              It does <strong>not</strong> cover hospitalization, life insurance, accident disability, or vehicle repair costs.
+            </div>
             <button type="submit" disabled={loading} style={{ width: "100%", marginTop: "8px" }}>
               {loading ? (
                 "Analyzing risk…"
@@ -1026,6 +1130,19 @@ function App() {
           )}
         </p>
         <p className="quote-model-version">Pricing model · {riskQuote?.model_version || "actuarial-gbm-blend-v1"}</p>
+        {selectedPlan && (
+          <div className="price-explain-panel">
+            <h3>Why this price?</h3>
+            <p>
+              Plain-language explanation of your premium so you can audit the quote.
+            </p>
+            <ul>
+              {priceWhyText(selectedPlan).map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="quote-top-bar" style={{ maxWidth: "1000px", margin: "0 auto 20px", width: "100%" }}>
           <span className={`risk-pill ${riskPillClass}`}>{(plansQuote?.risk_level || "moderate").toUpperCase()}</span>
@@ -1975,9 +2092,20 @@ function App() {
                     )}
                   </div>
                 </div>
-                <p style={{ fontSize: "0.82rem", color: "var(--text-dim)", marginTop: "20px", marginBottom: 0 }}>
-                Payouts: income loss only — excludes health, accident, and vehicle repair. UPI on file: {profile?.payout_upi || "—"}
-              </p>
+                <div className="coverage-warning" style={{ marginTop: "20px", marginBottom: 0 }}>
+                  <strong>Product scope:</strong> This policy is for <strong>income protection only</strong> during covered disruptions.
+                  UPI on file: {profile?.payout_upi || "—"}
+                </div>
+                <div style={{ marginTop: "14px" }}>
+                  <span className="stat-label">Explicit exclusions</span>
+                  <ul className="policy-exclusion-list">
+                    <li>Hospitalization / medical expense reimbursement</li>
+                    <li>Life insurance or accidental death benefits</li>
+                    <li>Disability and long-term health income replacement</li>
+                    <li>Vehicle repair, theft, or maintenance costs</li>
+                    <li>Non-disruption-related personal losses</li>
+                  </ul>
+                </div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "12px" }}>
                 <span style={{ fontSize: "0.82rem", color: waConfigured ? "var(--success)" : "var(--text-dim)" }}>
                   📱 WhatsApp alerts: <strong>{waConfigured ? "Active" : "Not configured"}</strong>
@@ -2111,6 +2239,9 @@ function App() {
                           </span>
                         )}
                       </span>
+                      <div className="claim-reason-text">
+                        {claimDecisionReason(claim)}
+                      </div>
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <div
@@ -2123,6 +2254,17 @@ function App() {
                         <div style={{ fontSize: "0.7rem", color: "var(--text-dim)", fontFamily: "monospace", marginTop: "2px" }}>
                           {claim.payout_ref}
                         </div>
+                      )}
+                      {isRejectedClaim(claim) && (
+                        <button
+                          type="button"
+                          className="btn-ghost"
+                          onClick={() => handleRaiseDispute(claim)}
+                          disabled={disputeSubmittingFor === claim.id}
+                          style={{ marginTop: "8px", padding: "6px 10px", fontSize: "0.75rem" }}
+                        >
+                          {disputeSubmittingFor === claim.id ? "Submitting..." : "Raise a Dispute"}
+                        </button>
                       )}
                     </div>
                   </div>
