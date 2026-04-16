@@ -1,16 +1,135 @@
 import { useState, useEffect, useCallback } from "react";
 import { api, WorkerPayload } from "./services/api";
 import { CloudRain, Waves, Activity, AlertTriangle, WifiOff, FileText, CheckCircle2, ShieldCheck, Zap } from "lucide-react";
+import { useTranslation, hasChosenLanguage } from "./i18n/LanguageContext";
+import { LANGUAGES, type LangCode } from "./i18n/index";
 
-type View = "landing" | "otp" | "register" | "quote" | "dashboard" | "admin";
+type View = "language" | "landing" | "otp" | "register" | "quote" | "dashboard" | "admin" | "profile";
 
 type DashboardSection = "home" | "policy" | "claims" | "live";
 type AdminSection = "overview" | "claims" | "fraud" | "predictions" | "payouts";
 const PLATFORM_OPTIONS = ["Zepto", "Swiggy", "Blinkit", "Instamart", "BigBasket", "Amazon", "Dunzo"];
 const SUPPORTED_CITIES = ["Bengaluru", "Mumbai", "Delhi", "Chennai", "Kolkata", "Hyderabad", "Pune", "Ahmedabad", "Jaipur", "Lucknow"];
 
+function ProfilePage({
+  t, lang, setLang, profile, phone, setView, setProfile, setWorkerId, workerId, genderLabels, shiftLabels,
+}: {
+  t: (k: string) => string;
+  lang: string;
+  setLang: (c: LangCode) => void;
+  profile: any;
+  phone: string;
+  setView: (v: View) => void;
+  setProfile: (p: any) => void;
+  setWorkerId: (id: number | null) => void;
+  workerId: number | null;
+  genderLabels: Record<string, string>;
+  shiftLabels: Record<string, string>;
+}) {
+  const [profileCity, setProfileCity] = useState(profile?.city || "Bengaluru");
+  const [profileZone, setProfileZone] = useState(profile?.zone_name || "");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+
+  const handleProfileCitySave = async () => {
+    if (!workerId || !profileCity.trim() || !profileZone.trim()) return;
+    setProfileSaving(true);
+    try {
+      await api.updateWorkerLocation(workerId, { city: profileCity.trim(), zone_name: profileZone.trim() });
+      const p = await api.getProfile(workerId);
+      setProfile(p);
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 3000);
+    } catch { /* ignore */ }
+    setProfileSaving(false);
+  };
+
+  return (
+    <div className="app-container">
+      <aside className="sidebar">
+        <div className="sidebar-logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+            <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z" fill="hsl(22, 95%, 55%)" stroke="hsl(22, 95%, 48%)" strokeWidth="1.2"/>
+          </svg>
+          <span>SurakshaShift</span>
+        </div>
+        <nav className="nav">
+          <button type="button" className="nav-link" onClick={() => setView("dashboard")}>📊 {t("dash_nav_home")}</button>
+          <button type="button" className="nav-link active">👤 {t("dash_nav_profile")}</button>
+        </nav>
+        <button type="button" className="nav-link" style={{ marginTop: "8px", fontSize: "0.82rem", opacity: 0.6 }} onClick={() => { setView("landing"); setWorkerId(null); setProfile(null); }}>
+          🚪 {t("dash_nav_signout")}
+        </button>
+      </aside>
+      <main className="main-content" style={{ maxWidth: "700px" }}>
+        <h1 style={{ fontSize: "1.8rem", marginBottom: "24px" }}>👤 {t("profile_title")}</h1>
+
+        <div className="card" style={{ marginBottom: "20px" }}>
+          <h3 style={{ marginBottom: "14px" }}>{t("profile_personal")}</h3>
+          <div className="profile-grid">
+            <div className="profile-row"><span className="profile-label">{t("profile_name")}</span><span>{profile?.name}</span></div>
+            <div className="profile-row"><span className="profile-label">{t("profile_phone")}</span><span>+91 {phone}</span></div>
+            <div className="profile-row"><span className="profile-label">{t("profile_email")}</span><span>{profile?.email || "—"}</span></div>
+            <div className="profile-row"><span className="profile-label">{t("profile_gender")}</span><span>{genderLabels[profile?.gender] || profile?.gender}</span></div>
+          </div>
+        </div>
+
+        <div className="card" style={{ marginBottom: "20px" }}>
+          <h3 style={{ marginBottom: "14px" }}>{t("profile_work")}</h3>
+          <div className="profile-grid">
+            <div className="profile-row"><span className="profile-label">{t("profile_platforms")}</span><span>{(profile?.platform_names || []).join(", ")}</span></div>
+            <div className="profile-row"><span className="profile-label">{t("profile_worker_type")}</span><span>{profile?.persona_type}</span></div>
+            <div className="profile-row"><span className="profile-label">{t("profile_shift")}</span><span>{shiftLabels[profile?.shift_type] || profile?.shift_type}</span></div>
+            <div className="profile-row"><span className="profile-label">{t("profile_income")}</span><span>₹{profile?.avg_weekly_income}</span></div>
+            <div className="profile-row"><span className="profile-label">{t("profile_upi")}</span><span>{profile?.payout_upi || "—"}</span></div>
+            <div className="profile-row"><span className="profile-label">{t("profile_zone")}</span><span>{profile?.zone_name} ({profile?.city})</span></div>
+            <div className="profile-row"><span className="profile-label">{t("profile_gps")}</span><span>{profile?.gps_enabled ? t("profile_yes") : t("profile_no")}</span></div>
+          </div>
+        </div>
+
+        <div className="card" style={{ marginBottom: "20px" }}>
+          <h3 style={{ marginBottom: "14px" }}>{t("profile_preferences")}</h3>
+          <div className="form-group" style={{ marginBottom: "18px" }}>
+            <label>{t("profile_language")}</label>
+            <div className="lang-grid-small">
+              {LANGUAGES.map((l) => (
+                <button
+                  key={l.code}
+                  type="button"
+                  className={`lang-option-small ${lang === l.code ? "lang-option-active" : ""}`}
+                  onClick={() => setLang(l.code as LangCode)}
+                >
+                  {l.nativeLabel}
+                </button>
+              ))}
+            </div>
+          </div>
+          <h4 style={{ marginBottom: "10px", fontSize: "0.9rem" }}>{t("profile_change_city")}</h4>
+          <div className="grid two" style={{ gap: "12px", marginBottom: "12px" }}>
+            <div className="form-group">
+              <label>{t("profile_new_city")}</label>
+              <select value={profileCity} onChange={e => setProfileCity(e.target.value)}>
+                {SUPPORTED_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>{t("profile_new_zone")}</label>
+              <input value={profileZone} onChange={e => setProfileZone(e.target.value)} placeholder={t("reg_zone")} />
+            </div>
+          </div>
+          <button type="button" onClick={handleProfileCitySave} disabled={profileSaving} style={{ width: "100%" }}>
+            {profileSaving ? t("profile_saving") : t("profile_save")}
+          </button>
+          {profileSaved && <div style={{ marginTop: "8px", color: "var(--success)", fontSize: "0.85rem" }}>{t("profile_saved")}</div>}
+        </div>
+      </main>
+    </div>
+  );
+}
+
 function App() {
-  const [view, setView] = useState<View>("landing");
+  const { t, lang, setLang } = useTranslation();
+  const [view, setView] = useState<View>(() => hasChosenLanguage() ? "landing" : "language");
   const [dashboardSection, setDashboardSection] = useState<DashboardSection>("home");
   const [workerId, setWorkerId] = useState<number | null>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -566,6 +685,42 @@ function App() {
   };
 
   // ═══════════════════════════════════════════════════════════════
+  //  VIEW: LANGUAGE SELECTOR
+  // ═══════════════════════════════════════════════════════════════
+  if (view === "language") {
+    return (
+      <div className="lang-selector-page">
+        <div className="lang-selector-card">
+          <div className="lang-selector-logo">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+              <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z" fill="hsl(22, 95%, 55%)" stroke="hsl(22, 95%, 48%)" strokeWidth="1.2"/>
+            </svg>
+            <span style={{ fontSize: "1.5rem", fontWeight: 700 }}>SurakshaShift</span>
+          </div>
+          <h1 className="lang-selector-title">{t("lang_title")}</h1>
+          <p className="lang-selector-subtitle">{t("lang_subtitle")}</p>
+          <div className="lang-grid">
+            {LANGUAGES.map((l) => (
+              <button
+                key={l.code}
+                type="button"
+                className={`lang-option ${lang === l.code ? "lang-option-active" : ""}`}
+                onClick={() => setLang(l.code)}
+              >
+                <span className="lang-option-native">{l.nativeLabel}</span>
+                <span className="lang-option-en">{l.label}</span>
+              </button>
+            ))}
+          </div>
+          <button type="button" className="landing-btn-primary" style={{ marginTop: "1.5rem", width: "100%" }} onClick={() => setView("landing")}>
+            {t("lang_continue")} →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   //  VIEW: LANDING
   // ═══════════════════════════════════════════════════════════════
   if (view === "landing") {
@@ -584,31 +739,31 @@ function App() {
             <span className="landing-brand-text">SurakshaShift</span>
           </div>
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <button type="button" className="lang-switch-btn" onClick={() => setView("language")} title="Change language">
+              {LANGUAGES.find(l => l.code === lang)?.nativeLabel ?? "EN"}
+            </button>
             <button type="button" className="landing-signin" style={{ opacity: 0.7, fontSize: "0.82rem" }} onClick={() => { setView("admin"); fetchAdminData(); }}>
-              Admin Portal
+              {t("admin_title")}
             </button>
             <button type="button" className="landing-signin" onClick={() => setView("otp")}>
-              Sign in
+              {t("landing_signin").replace("Already have an account? ", "")}
             </button>
           </div>
         </header>
 
         <main className="landing-main">
           <section className="landing-hero">
-            <p className="landing-eyebrow">Parametric income protection</p>
+            <p className="landing-eyebrow">{t("landing_badge")}</p>
             <h1 className="landing-headline">
-              Cover for every shift.
-              <span className="landing-headline-accent"> Peace for every ride.</span>
+              {t("landing_hero")}
             </h1>
             <p className="landing-lede">
-              Weekly plans built for India&apos;s delivery workforce — rain, flood, air quality, closures, and platform outages
-              matched to <strong>your zone</strong>, not just your city.
+              {t("landing_hero_sub")}
             </p>
             <div className="landing-hero-ctas">
               <button type="button" className="landing-btn-primary" onClick={() => setView("otp")}>
-                Get started
+                {t("landing_cta")}
               </button>
-              <p className="landing-hero-note">Takes under a minute · Demo OTP 123456</p>
             </div>
           </section>
 
@@ -616,32 +771,20 @@ function App() {
             <div className="landing-feature">
               <div className="landing-feature-icon" aria-hidden>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"
-                    stroke="hsl(22, 95%, 48%)"
-                    strokeWidth="1.5"
-                    fill="hsla(22, 95%, 55%, 0.12)"
-                  />
+                  <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z" stroke="hsl(22, 95%, 48%)" strokeWidth="1.5" fill="hsla(22, 95%, 55%, 0.12)"/>
                 </svg>
               </div>
-              <h2 className="landing-feature-title">Zone-sharp triggers</h2>
-              <p className="landing-feature-copy">Disruptions are verified against your delivery catchment — lower basis risk than city-wide products.</p>
+              <h2 className="landing-feature-title">{t("landing_feat1_title")}</h2>
+              <p className="landing-feature-copy">{t("landing_feat1_desc")}</p>
             </div>
             <div className="landing-feature">
               <div className="landing-feature-icon" aria-hidden>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M4 14h4l2-8 4 14 2-6h6"
-                    stroke="hsl(200, 65%, 40%)"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill="none"
-                  />
+                  <path d="M4 14h4l2-8 4 14 2-6h6" stroke="hsl(200, 65%, 40%)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                 </svg>
               </div>
-              <h2 className="landing-feature-title">Live risk pricing</h2>
-              <p className="landing-feature-copy">Weather, AQI, and news signals feed a transparent actuarial blend with an ML residual — every rupee is traceable.</p>
+              <h2 className="landing-feature-title">{t("landing_feat2_title")}</h2>
+              <p className="landing-feature-copy">{t("landing_feat2_desc")}</p>
             </div>
             <div className="landing-feature">
               <div className="landing-feature-icon" aria-hidden>
@@ -650,13 +793,13 @@ function App() {
                   <path d="M8 10h8M8 14h5" stroke="hsl(152, 55%, 38%)" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
               </div>
-              <h2 className="landing-feature-title">Automated claims path</h2>
-              <p className="landing-feature-copy">Eligible events can flow from sensor to review to payout with fraud checks in between — see the pipeline in the dashboard demo.</p>
+              <h2 className="landing-feature-title">{t("landing_feat3_title")}</h2>
+              <p className="landing-feature-copy">{t("landing_feat3_desc")}</p>
             </div>
           </section>
 
           <p className="landing-footnote">
-            Data partners: OpenWeatherMap · WAQI · NewsData.io / GNews when configured
+            {t("landing_footer")}
           </p>
         </main>
       </div>
@@ -682,7 +825,7 @@ function App() {
               </svg>
               <span className="auth-brand-wordmark">SurakshaShift</span>
             </div>
-            <p className="auth-tagline">Income protection for India&apos;s delivery workforce</p>
+            <p className="auth-tagline">{t("landing_badge")}</p>
             <ul className="auth-trust-list">
               <li>
                 <span className="auth-trust-icon">✓</span>
@@ -720,19 +863,19 @@ function App() {
                     />
                   </svg>
                 </div>
-                <h2>Sign in with mobile</h2>
-                <p className="subtitle">Verify your number to continue to your SurakshaShift profile</p>
+                <h2>{t("otp_title")}</h2>
+                <p className="subtitle">{t("otp_subtitle")}</p>
               </div>
               <div className="wizard-body">
                 <div className="form-group">
-                  <label>Mobile Number</label>
+                  <label>{t("otp_phone_label")}</label>
                   <div className="phone-input-group">
                     <span className="phone-prefix">+91</span>
                     <input
                       type="tel"
                       value={phone}
                       onChange={e => setPhone(e.target.value)}
-                      placeholder="Enter your 10-digit number"
+                      placeholder={t("otp_phone_placeholder")}
                       maxLength={10}
                     />
                   </div>
@@ -746,7 +889,7 @@ function App() {
                       onChange={(e) => setAuthConsentAccepted(e.target.checked)}
                       style={{ width: "auto", marginRight: "8px" }}
                     />
-                    I consent to processing my phone, profile and policy data for authentication, policy servicing, and claim handling as per the Privacy Notice.
+                    {t("otp_consent_label")}
                   </label>
                   <button
                     type="button"
@@ -754,16 +897,17 @@ function App() {
                     onClick={() => setShowPrivacyNotice((s) => !s)}
                     style={{ alignSelf: "flex-start", padding: "6px 10px", fontSize: "0.76rem" }}
                   >
-                    {showPrivacyNotice ? "Hide Privacy Notice" : "View Privacy Notice"}
+                    {showPrivacyNotice ? t("otp_privacy_close") : t("otp_privacy_notice")}
                   </button>
                   {showPrivacyNotice && (
                     <div className="privacy-panel">
-                      <strong>Privacy Notice (Hackathon Demo)</strong>
+                      <strong>{t("otp_privacy_title")}</strong>
                       <ul style={{ margin: "8px 0 0 18px", padding: 0 }}>
-                        <li>We collect phone number, work profile, city/zone, and payout UPI only for insurance operations.</li>
-                        <li>We do not collect Aadhaar or e-Shram UAN in this demo.</li>
-                        <li>Data is used for OTP login, pricing, policy activation, and claim processing.</li>
-                        <li>You may request correction/deletion by raising support or dispute in-app.</li>
+                        <li>{t("otp_privacy_body_1")}</li>
+                        <li>{t("otp_privacy_body_2")}</li>
+                        <li>{t("otp_privacy_body_3")}</li>
+                        <li>{t("otp_privacy_body_4")}</li>
+                        <li>{t("otp_privacy_body_5")}</li>
                       </ul>
                     </div>
                   )}
@@ -771,7 +915,7 @@ function App() {
                 {!otpSent ? (
                   <>
                     <button onClick={handleSendOtp} disabled={loading || phone.length < 10} style={{ width: "100%" }}>
-                      {loading ? "Sending..." : "Send OTP →"}
+                      {loading ? t("otp_sending") : t("otp_send") + " →"}
                     </button>
                     {authNotice && (
                       <div
@@ -794,22 +938,22 @@ function App() {
                   <>
                     <div className="otp-sent-label">
                       <span className="pulse-dot" />
-                      OTP sent to +91 {phone}{" "}
-                      <span style={{ color: "var(--text-dim)", fontSize: "0.8rem" }}>(use 123456)</span>
+                      OTP → +91 {phone}{" "}
+                      <span style={{ color: "var(--text-dim)", fontSize: "0.8rem" }}>(demo: 123456)</span>
                     </div>
                     <div className="form-group">
-                      <label>Enter OTP</label>
+                      <label>{t("otp_code_label")}</label>
                       <input
                         type="text"
                         value={otp}
                         onChange={e => setOtp(e.target.value)}
-                        placeholder="6-digit OTP"
+                        placeholder={t("otp_code_placeholder")}
                         maxLength={6}
                         className="otp-input"
                       />
                     </div>
                     <button onClick={handleVerifyOtp} disabled={loading || otp.length < 6 || !authConsentAccepted} style={{ width: "100%" }}>
-                      {loading ? "Verifying..." : "Verify & Continue →"}
+                      {loading ? t("otp_verifying") : t("otp_verify") + " →"}
                     </button>
                     {authNotice && (
                       <div
@@ -856,11 +1000,11 @@ function App() {
     return (
       <div className="app-container center-view" style={{ padding: "24px" }}>
         <div className="card wizard-card">
-          <h2 style={{ marginBottom: "8px" }}>Consent required</h2>
+          <h2 style={{ marginBottom: "8px" }}>{t("reg_consent_needed")}</h2>
           <p className="subtitle" style={{ marginBottom: "14px" }}>
-            Please review and accept the privacy notice in sign-in before opening the profile form.
+            {t("reg_consent_msg")}
           </p>
-          <button type="button" onClick={() => setView("otp")}>Back to sign-in</button>
+          <button type="button" onClick={() => setView("otp")}>{t("reg_consent_back")}</button>
         </div>
       </div>
     );
@@ -870,26 +1014,26 @@ function App() {
       <div className="app-container center-view">
         <div className="card wizard-card" style={{ maxWidth: "580px" }}>
           <div className="reg-progress" role="navigation" aria-label="Onboarding steps">
-            <div className="reg-step done">Verify</div>
-            <div className="reg-step active">Profile</div>
-            <div className="reg-step">Coverage</div>
-            <div className="reg-step">Done</div>
+            <div className="reg-step done">{t("reg_step_verify")}</div>
+            <div className="reg-step active">{t("reg_step_profile")}</div>
+            <div className="reg-step">{t("reg_step_coverage")}</div>
+            <div className="reg-step">{t("reg_step_done")}</div>
           </div>
           <div className="wizard-header">
-            <h2>Tell us about your work</h2>
-            <p className="subtitle">This helps our AI calculate your personalized premium</p>
+            <h2>{t("reg_title")}</h2>
+            <p className="subtitle">{t("otp_subtitle")}</p>
           </div>
           <form className="wizard-body" onSubmit={handleRegister}>
             <div className="compliance-note">
-              <strong>Worker classification:</strong> Platform-based gig worker (delivery / on-demand logistics) under Social Security Code-aligned demo scope.
+              {t("reg_classification")}
             </div>
             <div className="grid two" style={{ gap: "16px" }}>
               <div className="form-group">
-                <label>Full Name</label>
+                <label>{t("reg_name")}</label>
                 <input value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Ravi Kumar" required />
               </div>
               <div className="form-group">
-                <label>City</label>
+                <label>{t("reg_city")}</label>
                 <select value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })}>
                   {SUPPORTED_CITIES.map(c => (
                     <option key={c} value={c}>{c}</option>
@@ -898,7 +1042,7 @@ function App() {
               </div>
             </div>
             <div className="form-group">
-              <label>Gender</label>
+              <label>{t("reg_gender")}</label>
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
                 {([["male", "Male"], ["female", "Female"], ["non_binary", "Non-binary"], ["prefer_not_to_say", "Prefer not to say"]] as const).map(([val, lbl]) => (
                   <label key={val} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.85rem", cursor: "pointer", padding: "6px 12px", borderRadius: "10px", border: `1px solid ${formData.gender === val ? "var(--accent)" : "var(--border)"}`, background: formData.gender === val ? "var(--accent-light)" : "var(--surface)" }}>
@@ -909,13 +1053,13 @@ function App() {
               </div>
               {formData.gender === "female" && (
                 <div style={{ marginTop: "8px", padding: "10px 14px", borderRadius: "10px", background: "linear-gradient(135deg, rgba(236,72,153,0.12), rgba(168,85,247,0.10))", border: "1px solid rgba(236,72,153,0.25)", fontSize: "0.82rem", color: "var(--text-primary)" }}>
-                  <strong>Her Shield</strong> — You qualify for enhanced plans with safety-incident coverage, night-shift protection, health-leave triggers, and 10% subsidized premiums.
+                  <strong>Her Shield</strong> — {t("reg_her_shield")}
                 </div>
               )}
             </div>
             <div className="grid two" style={{ gap: "16px" }}>
               <div className="form-group">
-                <label>Delivery Platforms (select one or more)</label>
+                <label>{t("reg_platforms")}</label>
                 <div className="grid two" style={{ gap: "8px" }}>
                   {PLATFORM_OPTIONS.map((p) => {
                     const checked = formData.platform_names.includes(p);
@@ -959,7 +1103,7 @@ function App() {
                 </div>
               </div>
               <div className="form-group">
-                <label>Persona Type</label>
+                <label>{t("reg_persona")}</label>
                 <select value={formData.persona_type} onChange={e => setFormData({ ...formData, persona_type: e.target.value })}>
                   <option value="grocery">Grocery / Q-Commerce</option>
                   <option value="food">Food Delivery</option>
@@ -969,11 +1113,11 @@ function App() {
             </div>
             <div className="grid two" style={{ gap: "16px" }}>
               <div className="form-group">
-                <label>Avg Weekly Income (₹)</label>
+                <label>{t("reg_income")}</label>
                 <input type="number" value={formData.avg_weekly_income} onChange={e => setFormData({ ...formData, avg_weekly_income: Number(e.target.value) })} min={500} required />
               </div>
               <div className="form-group">
-                <label>Primary Delivery Zone</label>
+                <label>{t("reg_zone")}</label>
                 <input value={formData.primary_zone} onChange={e => setFormData({ ...formData, primary_zone: e.target.value })} placeholder="HSR Layout" required />
               </div>
             </div>
@@ -988,7 +1132,7 @@ function App() {
                 disabled={locationLoading}
                 style={{ fontSize: "0.8rem", padding: "8px 12px" }}
               >
-                {locationLoading ? "Detecting…" : "Use current location"}
+                {locationLoading ? t("reg_detecting") : t("reg_detect_location")}
               </button>
             </div>
             {locationNotice && (
@@ -997,7 +1141,7 @@ function App() {
 
             <div className="grid two" style={{ gap: "16px" }}>
               <div className="form-group">
-                <label>Shift Type</label>
+                <label>{t("reg_shift")}</label>
                 <select value={formData.shift_type} onChange={e => setFormData({ ...formData, shift_type: e.target.value })}>
                   <option value="morning">Morning (6am–12pm)</option>
                   <option value="afternoon">Afternoon (12pm–6pm)</option>
@@ -1008,24 +1152,23 @@ function App() {
                 </select>
               </div>
               <div className="form-group">
-                <label>UPI ID (for payouts)</label>
+                <label>{t("reg_upi")}</label>
                 <input value={formData.payout_upi} onChange={e => setFormData({ ...formData, payout_upi: e.target.value })} placeholder="name@upi" required />
               </div>
             </div>
             <div className="form-group" style={{ flexDirection: "row", alignItems: "center", gap: "12px" }}>
               <input type="checkbox" checked={formData.gps_enabled} onChange={e => setFormData({ ...formData, gps_enabled: e.target.checked })} style={{ width: "auto" }} id="gps-check" />
-              <label htmlFor="gps-check" style={{ textTransform: "none", fontSize: "0.9rem" }}>Enable GPS validation for faster claim approvals</label>
+              <label htmlFor="gps-check" style={{ textTransform: "none", fontSize: "0.9rem" }}>{t("reg_gps")}</label>
             </div>
             <div className="coverage-warning">
-              <strong>Coverage clarification:</strong> SurakshaShift is <strong>income protection only</strong> for covered disruption events.
-              It does <strong>not</strong> cover hospitalization, life insurance, accident disability, or vehicle repair costs.
+              {t("reg_coverage_warn")}
             </div>
             <button type="submit" disabled={loading} style={{ width: "100%", marginTop: "8px" }}>
               {loading ? (
-                "Analyzing risk…"
+                t("reg_submitting")
               ) : (
                 <>
-                  Get my risk quote
+                  {t("reg_submit")}
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
                     <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
@@ -1438,37 +1581,57 @@ function App() {
             className={`nav-link ${dashboardSection === "home" ? "active" : ""}`}
             onClick={() => scrollToDashboardSection("home")}
           >
-            📊 Dashboard
+            📊 {t("dash_nav_home")}
           </button>
           <button
             type="button"
             className={`nav-link ${dashboardSection === "policy" ? "active" : ""}`}
             onClick={() => scrollToDashboardSection("policy")}
           >
-            🛡️ My Policy
+            🛡️ {t("dash_nav_policy")}
           </button>
           <button
             type="button"
             className={`nav-link ${dashboardSection === "claims" ? "active" : ""}`}
             onClick={() => scrollToDashboardSection("claims")}
           >
-            📋 My claims
+            📋 {t("dash_nav_claims")}
           </button>
           <button
             type="button"
             className={`nav-link ${dashboardSection === "live" ? "active" : ""}`}
             onClick={() => scrollToDashboardSection("live")}
           >
-            🌦️ Live Conditions
+            🌦️ {t("dash_nav_live")}
           </button>
         </nav>
         <button
           type="button"
           className="nav-link"
-          style={{ marginTop: "8px", fontSize: "0.82rem", opacity: 0.7 }}
+          style={{ marginTop: "4px", fontSize: "0.82rem" }}
+          onClick={() => setView("profile")}
+        >
+          👤 {t("dash_nav_profile")}
+        </button>
+        <button
+          type="button"
+          className="nav-link"
+          style={{ marginTop: "4px", fontSize: "0.82rem", opacity: 0.7 }}
           onClick={() => { setView("admin"); fetchAdminData(); }}
         >
-          🏢 Admin Portal
+          🏢 {t("dash_nav_admin")}
+        </button>
+        <button
+          type="button"
+          className="nav-link"
+          style={{ marginTop: "4px", fontSize: "0.82rem", opacity: 0.6 }}
+          onClick={() => {
+            setView("landing");
+            setWorkerId(null);
+            setProfile(null);
+          }}
+        >
+          🚪 {t("dash_nav_signout")}
         </button>
         <div className={`worker-status ${activePolicy ? 'active' : ''}`}>
           <div style={{ fontWeight: 600, marginBottom: "4px" }}>{profile?.name}</div>
@@ -1486,7 +1649,7 @@ function App() {
           <header className="dashboard-header">
             <div>
               <h1 id="dash-home-title" style={{ fontSize: "2.2rem" }}>
-                Hello, {profile?.name?.split(" ")[0]} 👋
+                {t("dash_greeting")}, {profile?.name?.split(" ")[0]} 👋
               </h1>
               <p className="subtitle" style={{ fontSize: "1rem", marginTop: "6px" }}>
                 {liveRisk?.is_disruptive
@@ -1505,7 +1668,7 @@ function App() {
               <span className="stat-decorator" aria-hidden>
                 ₹
               </span>
-              <span className="stat-label">Weekly Premium</span>
+              <span className="stat-label">{t("dash_stats_premium")}</span>
               <span className="stat-value">₹{activePolicy?.premium_weekly || "0"}</span>
               <span className="stat-sub">Auto-renews weekly</span>
             </div>
@@ -1513,7 +1676,7 @@ function App() {
               <span className="stat-decorator" aria-hidden>
                 🛡️
               </span>
-              <span className="stat-label">Max Payout</span>
+              <span className="stat-label">{t("dash_stats_payout")}</span>
               <span className="stat-value" style={{ color: "var(--success)" }}>
                 ₹{activePolicy?.max_weekly_payout || "0"}
               </span>
@@ -2278,12 +2441,45 @@ function App() {
   );
 
   // ═══════════════════════════════════════════════════════════════
+  //  VIEW: PROFILE PAGE
+  // ═══════════════════════════════════════════════════════════════
+  if (view === "profile") {
+    const genderLabels: Record<string, string> = {
+      male: t("reg_gender_male"),
+      female: t("reg_gender_female"),
+      non_binary: t("reg_gender_other"),
+      prefer_not_to_say: t("reg_gender_pnts"),
+    };
+    const shiftLabels: Record<string, string> = {
+      morning: "Morning", afternoon: "Afternoon", evening: "Evening",
+      night: "Night", full_day: "Full Day", split: "Split",
+      day: t("reg_shift_day"), flex: t("reg_shift_flex"),
+    };
+
+    return (
+      <ProfilePage
+        t={t}
+        lang={lang}
+        setLang={setLang}
+        profile={profile}
+        phone={phone}
+        setView={setView}
+        setProfile={setProfile}
+        setWorkerId={setWorkerId}
+        workerId={workerId}
+        genderLabels={genderLabels}
+        shiftLabels={shiftLabels}
+      />
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   //  VIEW: ADMIN / INSURER DASHBOARD
   // ═══════════════════════════════════════════════════════════════
   if (view === "admin") {
     const kpi = adminKpis;
     const lossRatioColor = (kpi?.loss_ratio ?? 0) > 1 ? "var(--error)" : (kpi?.loss_ratio ?? 0) > 0.7 ? "var(--warning)" : "var(--success)";
-    const trendIcon = (t: string) => t === "rising" ? "📈" : t === "stable" ? "➡️" : "📉";
+    const trendIcon = (trend: string) => trend === "rising" ? "📈" : trend === "stable" ? "➡️" : "📉";
 
     return (
       <div className="app-container">

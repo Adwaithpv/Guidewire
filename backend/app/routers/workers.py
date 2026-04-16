@@ -124,6 +124,7 @@ def create_worker_profile(payload: WorkerProfileCreate, db: Session = Depends(ge
 
     # Demo mode behavior: send WhatsApp on every successful registration/profile save.
     # If override-to is active, all messages still route to that joined sandbox number.
+    wa_result: dict | None = None
     try:
         wa_result = notify_registration_welcome(
             to_phone=payload.phone,
@@ -136,7 +137,12 @@ def create_worker_profile(payload: WorkerProfileCreate, db: Session = Depends(ge
     except Exception as exc:
         log.exception("Registration WhatsApp failed: %s", exc)
 
-    return WorkerProfileResponse(worker_id=profile.id, user_id=user.id, risk_score=profile.risk_score)
+    return WorkerProfileResponse(
+        worker_id=profile.id,
+        user_id=user.id,
+        risk_score=profile.risk_score,
+        whatsapp_notification=wa_result,
+    )
 
 
 @router.get("/profile/{worker_id}")

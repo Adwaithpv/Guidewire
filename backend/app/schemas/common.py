@@ -38,6 +38,7 @@ class WorkerProfileResponse(BaseModel):
     worker_id: int
     user_id: int
     risk_score: float
+    whatsapp_notification: dict[str, Any] | None = None
 
 
 class RiskQuoteRequest(BaseModel):

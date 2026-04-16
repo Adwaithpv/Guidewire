@@ -25,18 +25,38 @@ TWILIO_WHATSAPP_FROM = (os.getenv("TWILIO_WHATSAPP_FROM") or "").strip()
 TWILIO_WHATSAPP_OVERRIDE_TO = (os.getenv("TWILIO_WHATSAPP_OVERRIDE_TO") or "").strip()
 
 _client: Any = None
+_client_key: tuple[str, str] | None = None
+
+
+def _runtime_settings() -> dict[str, str]:
+    """
+    Read Twilio settings at call time so env changes are picked up
+    after backend restarts and during local dev.
+    """
+    return {
+        "sid": (os.getenv("TWILIO_ACCOUNT_SID") or TWILIO_SID or "").strip(),
+        "token": (os.getenv("TWILIO_AUTH_TOKEN") or TWILIO_TOKEN or "").strip(),
+        "from": (os.getenv("TWILIO_WHATSAPP_FROM") or TWILIO_WHATSAPP_FROM or "").strip(),
+        "override_to": (os.getenv("TWILIO_WHATSAPP_OVERRIDE_TO") or TWILIO_WHATSAPP_OVERRIDE_TO or "").strip(),
+    }
 
 
 def _get_client() -> Any:
-    global _client
-    if _client is not None:
+    global _client, _client_key
+    settings = _runtime_settings()
+    sid = settings["sid"]
+    token = settings["token"]
+    key = (sid, token)
+
+    if _client is not None and _client_key == key:
         return _client
-    if not TWILIO_SID or not TWILIO_TOKEN:
+    if not sid or not token:
         return None
     try:
         from twilio.rest import Client
-        _client = Client(TWILIO_SID, TWILIO_TOKEN)
-        log.info("Twilio WhatsApp client initialized (SID: %s...)", TWILIO_SID[:8])
+        _client = Client(sid, token)
+        _client_key = key
+        log.info("Twilio WhatsApp client initialized (SID: %s...)", sid[:8])
         return _client
     except ImportError:
         log.warning("twilio package not installed — pip install twilio")
@@ -47,7 +67,18 @@ def _get_client() -> Any:
 
 
 def is_configured() -> bool:
-    return bool(TWILIO_SID and TWILIO_TOKEN and TWILIO_WHATSAPP_FROM)
+    settings = _runtime_settings()
+    return bool(settings["sid"] and settings["token"] and settings["from"])
+
+
+def runtime_status() -> dict[str, Any]:
+    settings = _runtime_settings()
+    return {
+        "configured": bool(settings["sid"] and settings["token"] and settings["from"]),
+        "from": settings["from"],
+        "override_to": settings["override_to"],
+        "sid_prefix": f"{settings['sid'][:6]}..." if settings["sid"] else "",
+    }
 
 
 def _format_phone(phone: str) -> str:
@@ -69,7 +100,11 @@ def send_whatsapp(
     Falls back to a log entry when Twilio isn't configured.
     """
     client = _get_client()
-    if client is None or not TWILIO_WHATSAPP_FROM:
+    settings = _runtime_settings()
+    twilio_from = settings["from"]
+    override_to = settings["override_to"]
+
+    if client is None or not twilio_from:
         log.info("WhatsApp (no-op): to=%s msg=%s", to_phone, message[:80])
         return {
             "sent": False,
@@ -78,8 +113,8 @@ def send_whatsapp(
         }
 
     requested_to_wa = _format_phone(to_phone)
-    to_wa = _format_phone(TWILIO_WHATSAPP_OVERRIDE_TO) if TWILIO_WHATSAPP_OVERRIDE_TO else requested_to_wa
-    from_wa = TWILIO_WHATSAPP_FROM if TWILIO_WHATSAPP_FROM.startswith("whatsapp:") else f"whatsapp:{TWILIO_WHATSAPP_FROM}"
+    to_wa = _format_phone(override_to) if override_to else requested_to_wa
+    from_wa = twilio_from if twilio_from.startswith("whatsapp:") else f"whatsapp:{twilio_from}"
 
     try:
         msg = client.messages.create(
@@ -98,7 +133,7 @@ def send_whatsapp(
             "error_message": msg.error_message,
             "to": to_wa,
             "requested_to": requested_to_wa,
-            "override_active": bool(TWILIO_WHATSAPP_OVERRIDE_TO),
+            "override_active": bool(override_to),
             "hint": "If status is 'queued' but nothing arrives, re-join the Twilio sandbox: send 'join <your-keyword>' to the sandbox number.",
         }
     except Exception as e:
@@ -108,7 +143,7 @@ def send_whatsapp(
             "reason": str(e),
             "to": to_wa,
             "requested_to": requested_to_wa,
-            "override_active": bool(TWILIO_WHATSAPP_OVERRIDE_TO),
+            "override_active": bool(override_to),
         }
 
 

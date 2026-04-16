@@ -3,6 +3,8 @@ WhatsApp notification endpoints + inbound bot webhook.
 """
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+from typing import Any
 from urllib.parse import parse_qs
 from xml.sax.saxutils import escape
 
@@ -21,10 +23,16 @@ from app.services.whatsapp_service import (
     is_configured,
     notify_policy_activated,
     notify_shift_guardian,
+    runtime_status,
     send_whatsapp,
 )
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
+
+WHATSAPP_DEMO_OTP = "123456"
+WHATSAPP_SESSION_TTL_MINUTES = 60
+_whatsapp_auth_sessions: dict[str, dict[str, Any]] = {}
+_whatsapp_auth_pending: dict[str, dict[str, Any]] = {}
 
 
 class WhatsAppTestRequest(BaseModel):
@@ -48,6 +56,8 @@ def _menu_text() -> str:
     return (
         "👋 *Welcome to SurakshaShift WhatsApp Bot*\n\n"
         "Reply with one word:\n"
+        "• *login* - verify your account first\n"
+        "• *logout* - clear this chat session\n"
         "• *status* - your active policy\n"
         "• *claims* - your recent claims\n"
         "• *risk* - live risk in your city\n"
@@ -95,9 +105,26 @@ def _find_worker_by_whatsapp_sender(
     return None, None
 
 
+def _prune_expired_whatsapp_sessions() -> None:
+    now = datetime.now(timezone.utc)
+    for sender, session in list(_whatsapp_auth_sessions.items()):
+        expires_at = session.get("expires_at")
+        if isinstance(expires_at, datetime) and expires_at <= now:
+            _whatsapp_auth_sessions.pop(sender, None)
+
+
+def _mask_phone(value: str) -> str:
+    digits = _norm_phone_digits(value)
+    if len(digits) < 4:
+        return "****"
+    return f"***{digits[-4:]}"
+
+
 @router.get("/whatsapp/status")
 def whatsapp_status() -> dict:
-    return {"configured": is_configured()}
+    status = runtime_status()
+    status["configured"] = bool(is_configured())
+    return status
 
 
 @router.post("/whatsapp/test")
@@ -181,15 +208,102 @@ async def whatsapp_webhook(request: Request, db: Session = Depends(get_db)) -> R
     body = (form.get("Body", [""])[0] or "").strip()
     from_value = (form.get("From", [""])[0] or "").strip()
     cmd = body.lower()
+    _prune_expired_whatsapp_sessions()
 
     if not body:
-        return _twiml_message(_menu_text())
-
-    worker, user = _find_worker_by_whatsapp_sender(db, from_value)
-    if worker is None or user is None:
         return _twiml_message(
-            "We could not find your worker profile for this WhatsApp number.\n\n"
-            "Please sign up once in the app first, then send *menu* here."
+            "🔐 Please login before using the bot.\n\n"
+            "Type *login* to begin phone verification."
+        )
+
+    if cmd in {"logout", "signout"}:
+        _whatsapp_auth_sessions.pop(from_value, None)
+        _whatsapp_auth_pending.pop(from_value, None)
+        return _twiml_message(
+            "You have been logged out.\n\n"
+            "Type *login* to sign in again."
+        )
+
+    if cmd in {"login", "signin"}:
+        _whatsapp_auth_pending[from_value] = {"step": "await_phone"}
+        _whatsapp_auth_sessions.pop(from_value, None)
+        return _twiml_message(
+            "📱 Please enter the phone number used in SurakshaShift registration.\n\n"
+            "Example: 9884922459"
+        )
+
+    session = _whatsapp_auth_sessions.get(from_value)
+    pending = _whatsapp_auth_pending.get(from_value)
+
+    if session is None:
+        if pending is None:
+            return _twiml_message(
+                "🔐 Please login before using the bot.\n\n"
+                "Type *login* to begin phone verification."
+            )
+
+        step = pending.get("step")
+        if step == "await_phone":
+            worker, user = _find_worker_by_whatsapp_sender(db, body)
+            if worker is None or user is None:
+                return _twiml_message(
+                    "We could not find an account for that phone number.\n\n"
+                    "Please try again with the number used during app signup."
+                )
+            _whatsapp_auth_pending[from_value] = {
+                "step": "await_otp",
+                "user_id": user.id,
+                "worker_id": worker.id,
+                "masked_phone": _mask_phone(user.phone),
+            }
+            return _twiml_message(
+                f"✅ Number matched ({_mask_phone(user.phone)}).\n"
+                "Enter OTP to continue.\n\n"
+                "Demo OTP: *123456*"
+            )
+
+        if step == "await_otp":
+            if cmd != WHATSAPP_DEMO_OTP:
+                return _twiml_message(
+                    "❌ Invalid OTP.\n\n"
+                    "Please enter the 6-digit OTP again.\n"
+                    "Demo OTP: *123456*"
+                )
+
+            user_id = pending.get("user_id")
+            worker_id = pending.get("worker_id")
+            user = db.scalar(select(User).where(User.id == user_id))
+            worker = db.scalar(select(WorkerProfile).where(WorkerProfile.id == worker_id))
+            if user is None or worker is None:
+                _whatsapp_auth_pending.pop(from_value, None)
+                return _twiml_message(
+                    "Your account lookup failed. Please type *login* and try again."
+                )
+
+            _whatsapp_auth_sessions[from_value] = {
+                "user_id": user.id,
+                "worker_id": worker.id,
+                "expires_at": datetime.now(timezone.utc)
+                + timedelta(minutes=WHATSAPP_SESSION_TTL_MINUTES),
+            }
+            _whatsapp_auth_pending.pop(from_value, None)
+
+            zone = db.scalar(select(Zone).where(Zone.id == worker.primary_zone_id))
+            zone_name = zone.zone_name if zone else "your zone"
+            return _twiml_message(
+                f"🔓 Logged in as *{user.name}* ({zone_name}).\n\n{_menu_text()}"
+            )
+
+        _whatsapp_auth_pending.pop(from_value, None)
+        return _twiml_message("Session reset. Type *login* to start again.")
+
+    user = db.scalar(select(User).where(User.id == session.get("user_id")))
+    worker = db.scalar(select(WorkerProfile).where(WorkerProfile.id == session.get("worker_id")))
+    if worker is None or user is None:
+        _whatsapp_auth_sessions.pop(from_value, None)
+        return _twiml_message(
+            "Your session is invalid now.\n\n"
+            "Type *login* to authenticate again."
         )
 
     zone = db.scalar(select(Zone).where(Zone.id == worker.primary_zone_id))
@@ -199,7 +313,8 @@ async def whatsapp_webhook(request: Request, db: Session = Depends(get_db)) -> R
     if cmd in {"menu", "help", "hi", "hello", "start"}:
         return _twiml_message(
             f"{_menu_text()}\n\n"
-            f"Logged in as: *{user.name}* ({zone_name})"
+            f"Logged in as: *{user.name}* ({zone_name})\n"
+            f"Session expires in {WHATSAPP_SESSION_TTL_MINUTES} minutes."
         )
 
     if cmd in {"status", "policy"}:
