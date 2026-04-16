@@ -183,24 +183,62 @@ export const api = {
     request(`${API_BASE}/fraud/flags`),
 
   // Phase 3: Analytics / Admin
-  getAnalyticsKpis: () =>
-    request(`${API_BASE}/analytics/kpis`),
+  getAnalyticsKpis: (filters?: { city?: string; plan?: string }) => {
+    const p = new URLSearchParams();
+    if (filters?.city) p.set("city", filters.city);
+    if (filters?.plan) p.set("plan", filters.plan);
+    const qs = p.toString();
+    return request(`${API_BASE}/analytics/kpis${qs ? `?${qs}` : ""}`);
+  },
   getZoneHeatmap: () =>
     request(`${API_BASE}/analytics/zone-heatmap`),
-  getClaimsByTrigger: () =>
-    request(`${API_BASE}/analytics/claims-by-trigger`),
-  getFraudOverview: () =>
-    request(`${API_BASE}/analytics/fraud-overview`),
+  getClaimsByTrigger: (filters?: { city?: string; plan?: string }) => {
+    const p = new URLSearchParams();
+    if (filters?.city) p.set("city", filters.city);
+    if (filters?.plan) p.set("plan", filters.plan);
+    const qs = p.toString();
+    return request(`${API_BASE}/analytics/claims-by-trigger${qs ? `?${qs}` : ""}`);
+  },
+  getFraudOverview: (filters?: { city?: string; plan?: string }) => {
+    const p = new URLSearchParams();
+    if (filters?.city) p.set("city", filters.city);
+    if (filters?.plan) p.set("plan", filters.plan);
+    const qs = p.toString();
+    return request(`${API_BASE}/analytics/fraud-overview${qs ? `?${qs}` : ""}`);
+  },
   getPredictions: (city: string) =>
     request(`${API_BASE}/analytics/predictions?city=${encodeURIComponent(city)}`),
   getWorkerProtection: (workerId: number) =>
     request(`${API_BASE}/analytics/worker-protection/${workerId}`),
-  getPayoutsLedger: () =>
-    request(`${API_BASE}/analytics/payouts-ledger`),
+  getPayoutsLedger: (filters?: { city?: string; plan?: string }) => {
+    const p = new URLSearchParams();
+    if (filters?.city) p.set("city", filters.city);
+    if (filters?.plan) p.set("plan", filters.plan);
+    const qs = p.toString();
+    return request(`${API_BASE}/analytics/payouts-ledger${qs ? `?${qs}` : ""}`);
+  },
   getFinancialProof: (city: string) =>
     request(`${API_BASE}/analytics/financial-proof?city=${encodeURIComponent(city)}`),
   getComplianceChecklist: () =>
     request(`${API_BASE}/analytics/compliance-checklist`),
+  getWorkersTable: (filters?: { city?: string; plan?: string }) => {
+    const p = new URLSearchParams();
+    if (filters?.city) p.set("city", filters.city);
+    if (filters?.plan) p.set("plan", filters.plan);
+    const qs = p.toString();
+    return request(`${API_BASE}/analytics/workers-table${qs ? `?${qs}` : ""}`);
+  },
+  getWeeklyTrends: (filters?: { city?: string; plan?: string }) => {
+    const p = new URLSearchParams();
+    if (filters?.city) p.set("city", filters.city);
+    if (filters?.plan) p.set("plan", filters.plan);
+    const qs = p.toString();
+    return request(`${API_BASE}/analytics/weekly-trends${qs ? `?${qs}` : ""}`);
+  },
+  getPlanDistribution: (city?: string) => {
+    const qs = city ? `?city=${encodeURIComponent(city)}` : "";
+    return request(`${API_BASE}/analytics/plan-distribution${qs}`);
+  },
 
   // Phase 3: WhatsApp notifications
   getWhatsappStatus: () =>

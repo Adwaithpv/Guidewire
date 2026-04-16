@@ -2070,3 +2070,30 @@ button:disabled {
   min-width: 120px;
 }
 
+/* Admin filter bar */
+.admin-filter-select {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+  min-width: 140px;
+}
+.admin-filter-select:focus {
+  border-color: var(--primary);
+}
+.admin-filter-select option {
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+/* Grid helpers for admin */
+.grid.three {
+  grid-template-columns: repeat(3, 1fr);
+}
+

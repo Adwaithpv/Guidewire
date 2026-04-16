@@ -7,7 +7,7 @@ import { LANGUAGES, type LangCode } from "./i18n/index";
 type View = "language" | "landing" | "otp" | "register" | "quote" | "dashboard" | "admin" | "profile";
 
 type DashboardSection = "home" | "policy" | "claims" | "live";
-type AdminSection = "overview" | "claims" | "fraud" | "predictions" | "payouts";
+type AdminSection = "overview" | "claims" | "fraud" | "predictions" | "payouts" | "workers";
 const PLATFORM_OPTIONS = ["Zepto", "Swiggy", "Blinkit", "Instamart", "BigBasket", "Amazon", "Dunzo"];
 const SUPPORTED_CITIES = ["Bengaluru", "Mumbai", "Delhi", "Chennai", "Kolkata", "Hyderabad", "Pune", "Ahmedabad", "Jaipur", "Lucknow"];
 
@@ -190,6 +190,11 @@ function App() {
   const [adminFinancialProof, setAdminFinancialProof] = useState<any>(null);
   const [adminComplianceChecklist, setAdminComplianceChecklist] = useState<any>(null);
   const [adminLoading, setAdminLoading] = useState(false);
+  const [adminWorkersTable, setAdminWorkersTable] = useState<any[]>([]);
+  const [adminWeeklyTrends, setAdminWeeklyTrends] = useState<any[]>([]);
+  const [adminPlanDist, setAdminPlanDist] = useState<any[]>([]);
+  const [adminFilterCity, setAdminFilterCity] = useState<string>("");
+  const [adminFilterPlan, setAdminFilterPlan] = useState<string>("");
 
   // Dashboard data refresh
   const fetchDashboardData = useCallback(async () => {
@@ -633,15 +638,22 @@ function App() {
   const fetchAdminData = useCallback(async () => {
     setAdminLoading(true);
     try {
-      const city = profile?.city || "Bengaluru";
-      const [kpi, fraud, pred, triggers, ledger, financialProof, complianceChecklist] = await Promise.all([
-        api.getAnalyticsKpis(),
-        api.getFraudOverview(),
+      const city = adminFilterCity || profile?.city || "Bengaluru";
+      const filters = {
+        city: adminFilterCity || undefined,
+        plan: adminFilterPlan || undefined,
+      };
+      const [kpi, fraud, pred, triggers, ledger, financialProof, complianceChecklist, wTable, wTrends, planDist] = await Promise.all([
+        api.getAnalyticsKpis(filters),
+        api.getFraudOverview(filters),
         api.getPredictions(city),
-        api.getClaimsByTrigger(),
-        api.getPayoutsLedger(),
+        api.getClaimsByTrigger(filters),
+        api.getPayoutsLedger(filters),
         api.getFinancialProof(city),
         api.getComplianceChecklist(),
+        api.getWorkersTable(filters),
+        api.getWeeklyTrends(filters),
+        api.getPlanDistribution(adminFilterCity || undefined),
       ]);
       setAdminKpis(kpi);
       setAdminFraud(fraud);
@@ -650,12 +662,15 @@ function App() {
       setAdminPayoutsLedger(ledger);
       setAdminFinancialProof(financialProof);
       setAdminComplianceChecklist(complianceChecklist);
+      setAdminWorkersTable(wTable);
+      setAdminWeeklyTrends(wTrends);
+      setAdminPlanDist(planDist);
     } catch (e) {
       console.error(e);
     } finally {
       setAdminLoading(false);
     }
-  }, [profile?.city]);
+  }, [profile?.city, adminFilterCity, adminFilterPlan]);
 
   useEffect(() => {
     if (view === "admin") {
@@ -2496,6 +2511,7 @@ function App() {
           <nav className="nav">
             {([
               { id: "overview" as AdminSection, label: "📊 Overview" },
+              { id: "workers" as AdminSection, label: "👥 Workers" },
               { id: "claims" as AdminSection, label: "📋 Claims" },
               { id: "fraud" as AdminSection, label: "🛡️ Fraud Detection" },
               { id: "predictions" as AdminSection, label: "🔮 Predictions" },
@@ -2517,6 +2533,48 @@ function App() {
         </aside>
 
         <main className="main-content" style={{ padding: "40px" }}>
+          {/* ── Admin filter bar ── */}
+          <div className="admin-filter-bar" style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "24px", flexWrap: "wrap" }}>
+            <select
+              value={adminFilterCity}
+              onChange={(e) => { setAdminFilterCity(e.target.value); }}
+              className="admin-filter-select"
+            >
+              <option value="">All Cities</option>
+              {["Bengaluru", "Mumbai", "Chennai", "Delhi", "Hyderabad"].map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <select
+              value={adminFilterPlan}
+              onChange={(e) => { setAdminFilterPlan(e.target.value); }}
+              className="admin-filter-select"
+            >
+              <option value="">All Plans</option>
+              {["basic", "standard", "full", "her-basic", "her-standard", "her-full"].map(p => (
+                <option key={p} value={p}>{p.replace("-", " ").replace(/\b\w/g, l => l.toUpperCase())}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="btn btn-accent"
+              style={{ padding: "8px 20px", fontSize: "0.85rem" }}
+              onClick={() => fetchAdminData()}
+            >
+              Apply Filters
+            </button>
+            {(adminFilterCity || adminFilterPlan) && (
+              <button
+                type="button"
+                className="btn"
+                style={{ padding: "8px 16px", fontSize: "0.82rem", opacity: 0.7 }}
+                onClick={() => { setAdminFilterCity(""); setAdminFilterPlan(""); }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
           {adminLoading && !kpi && !adminFraud ? (
             <div style={{ textAlign: "center", padding: "80px 0", color: "var(--text-dim)" }}>Loading admin data...</div>
           ) : (
@@ -2526,7 +2584,8 @@ function App() {
                   <h1 style={{ fontSize: "2rem", marginBottom: "6px" }}>Insurer Dashboard</h1>
                   <p className="subtitle" style={{ marginBottom: "28px" }}>Real-time KPIs, loss ratios, and platform health</p>
 
-                  <div className="grid four" style={{ marginBottom: "28px" }}>
+                  {/* ── 6 KPI cards ── */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "14px", marginBottom: "28px" }}>
                     <div className="stat-card">
                       <span className="stat-decorator" aria-hidden>👥</span>
                       <span className="stat-label">Active Workers</span>
@@ -2536,13 +2595,13 @@ function App() {
                     <div className="stat-card">
                       <span className="stat-decorator" aria-hidden>₹</span>
                       <span className="stat-label">Premiums Collected</span>
-                      <span className="stat-value">₹{kpi.premium_collected}</span>
-                      <span className="stat-sub">Weekly premiums</span>
+                      <span className="stat-value">₹{Number(kpi.premium_collected).toLocaleString("en-IN")}</span>
+                      <span className="stat-sub">All-time</span>
                     </div>
                     <div className="stat-card">
                       <span className="stat-decorator" aria-hidden>💸</span>
                       <span className="stat-label">Total Payouts</span>
-                      <span className="stat-value" style={{ color: "var(--accent)" }}>₹{kpi.total_payouts}</span>
+                      <span className="stat-value" style={{ color: "var(--accent)" }}>₹{Number(kpi.total_payouts).toLocaleString("en-IN")}</span>
                       <span className="stat-sub">{kpi.approved_claims} claims paid</span>
                     </div>
                     <div className="stat-card">
@@ -2553,8 +2612,85 @@ function App() {
                       </span>
                       <span className="stat-sub">{kpi.loss_ratio < 0.7 ? "Healthy" : kpi.loss_ratio < 1 ? "Watch" : "Unsustainable"}</span>
                     </div>
+                    <div className="stat-card">
+                      <span className="stat-decorator" aria-hidden>❌</span>
+                      <span className="stat-label">Rejected Claims</span>
+                      <span className="stat-value" style={{ color: "var(--error)" }}>{kpi.rejected_claims}</span>
+                      <span className="stat-sub">of {kpi.total_claims} total</span>
+                    </div>
+                    <div className="stat-card">
+                      <span className="stat-decorator" aria-hidden>📐</span>
+                      <span className="stat-label">Avg Claim Value</span>
+                      <span className="stat-value">₹{Number(kpi.avg_claim_value).toLocaleString("en-IN")}</span>
+                      <span className="stat-sub">Per approved claim</span>
+                    </div>
                   </div>
 
+                  {/* ── Plan distribution + Weekly trends ── */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
+                    <div className="card" style={{ padding: "24px" }}>
+                      <h3 style={{ marginBottom: "16px" }}>Plan Distribution (Active)</h3>
+                      {adminPlanDist.length === 0 ? (
+                        <div style={{ color: "var(--text-dim)", fontSize: "0.9rem" }}>No active plans</div>
+                      ) : (
+                        <div style={{ display: "grid", gap: "10px" }}>
+                          {adminPlanDist.map((pd: any) => {
+                            const maxC = Math.max(...adminPlanDist.map((d: any) => d.count), 1);
+                            return (
+                              <div key={pd.plan}>
+                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "4px" }}>
+                                  <span style={{ color: "var(--text-secondary)" }}>{pd.label || pd.plan}</span>
+                                  <span style={{ fontWeight: 700 }}>{pd.count}</span>
+                                </div>
+                                <div style={{ background: "var(--surface-raised)", borderRadius: "6px", height: "10px", overflow: "hidden" }}>
+                                  <div style={{
+                                    height: "100%", borderRadius: "6px",
+                                    background: pd.plan.startsWith("her-") ? "var(--accent)" : "var(--primary)",
+                                    width: `${(pd.count / maxC) * 100}%`,
+                                    transition: "width 0.4s ease",
+                                  }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="card" style={{ padding: "24px" }}>
+                      <h3 style={{ marginBottom: "16px" }}>Weekly Trend (Last 4 Weeks)</h3>
+                      {adminWeeklyTrends.length === 0 ? (
+                        <div style={{ color: "var(--text-dim)", fontSize: "0.9rem" }}>No trend data</div>
+                      ) : (
+                        <table style={{ width: "100%", fontSize: "0.82rem", borderCollapse: "collapse" }}>
+                          <thead>
+                            <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                              <th style={{ textAlign: "left", padding: "6px 8px", color: "var(--text-dim)" }}>Week</th>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "var(--text-dim)" }}>Premiums</th>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "var(--text-dim)" }}>Payouts</th>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "var(--text-dim)" }}>Claims</th>
+                              <th style={{ textAlign: "right", padding: "6px 8px", color: "var(--text-dim)" }}>LR</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {adminWeeklyTrends.slice(-4).map((w: any) => (
+                              <tr key={w.week_start} style={{ borderBottom: "1px solid var(--border)" }}>
+                                <td style={{ padding: "6px 8px" }}>{w.week}</td>
+                                <td style={{ padding: "6px 8px", textAlign: "right", color: "var(--success)" }}>₹{w.premiums}</td>
+                                <td style={{ padding: "6px 8px", textAlign: "right", color: "var(--accent)" }}>₹{w.payouts}</td>
+                                <td style={{ padding: "6px 8px", textAlign: "right" }}>{w.claims}</td>
+                                <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 700, color: w.loss_ratio > 0.7 ? "var(--warning)" : "var(--success)" }}>
+                                  {w.loss_ratio > 0 ? `${(w.loss_ratio * 100).toFixed(0)}%` : "—"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ── Claims + Fraud cards ── */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                     <div className="card" style={{ padding: "24px" }}>
                       <h3 style={{ marginBottom: "16px" }}>Claims Breakdown</h3>
@@ -2564,16 +2700,16 @@ function App() {
                           <div style={{ fontSize: "1.5rem", fontWeight: 700 }}>{kpi.total_claims}</div>
                         </div>
                         <div>
-                          <span className="stat-label">Avg Claim Value</span>
-                          <div style={{ fontSize: "1.5rem", fontWeight: 700 }}>₹{kpi.avg_claim_value}</div>
-                        </div>
-                        <div>
                           <span className="stat-label">Approved</span>
                           <div style={{ fontSize: "1.2rem", fontWeight: 600, color: "var(--success)" }}>{kpi.approved_claims}</div>
                         </div>
                         <div>
                           <span className="stat-label">Pending</span>
                           <div style={{ fontSize: "1.2rem", fontWeight: 600, color: "var(--warning)" }}>{kpi.pending_claims}</div>
+                        </div>
+                        <div>
+                          <span className="stat-label">Rejected</span>
+                          <div style={{ fontSize: "1.2rem", fontWeight: 600, color: "var(--error)" }}>{kpi.rejected_claims}</div>
                         </div>
                       </div>
                     </div>
@@ -2600,6 +2736,7 @@ function App() {
                     </div>
                   </div>
 
+                  {/* ── Compliance + Financial proof ── */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginTop: "20px" }}>
                     <div className="card" style={{ padding: "24px" }}>
                       <h3 style={{ marginBottom: "14px" }}>Insurance Checklist Coverage</h3>
@@ -2841,10 +2978,91 @@ function App() {
                 </section>
               )}
 
+              {/* ── Workers section ── */}
+              {adminSection === "workers" && (
+                <section>
+                  <h2 style={{ fontSize: "1.5rem", marginBottom: "6px" }}>Worker Directory</h2>
+                  <p className="subtitle" style={{ marginBottom: "20px" }}>
+                    {adminWorkersTable.length} workers {adminFilterCity ? `in ${adminFilterCity}` : "across all cities"}
+                    {adminFilterPlan ? ` on ${adminFilterPlan} plan` : ""}
+                  </p>
+
+                  <div className="card" style={{ padding: "24px" }}>
+                    {adminWorkersTable.length === 0 ? (
+                      <div className="empty-state">
+                        <div className="empty-icon">👥</div>
+                        <div>No workers found</div>
+                      </div>
+                    ) : (
+                      <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.82rem" }}>
+                          <thead>
+                            <tr style={{ borderBottom: "2px solid var(--border)" }}>
+                              <th style={{ textAlign: "left", padding: "8px 10px", color: "var(--text-dim)", fontWeight: 600 }}>Name</th>
+                              <th style={{ textAlign: "left", padding: "8px 10px", color: "var(--text-dim)", fontWeight: 600 }}>City</th>
+                              <th style={{ textAlign: "left", padding: "8px 10px", color: "var(--text-dim)", fontWeight: 600 }}>Zone</th>
+                              <th style={{ textAlign: "left", padding: "8px 10px", color: "var(--text-dim)", fontWeight: 600 }}>Platform</th>
+                              <th style={{ textAlign: "center", padding: "8px 10px", color: "var(--text-dim)", fontWeight: 600 }}>Plan</th>
+                              <th style={{ textAlign: "right", padding: "8px 10px", color: "var(--text-dim)", fontWeight: 600 }}>Premium</th>
+                              <th style={{ textAlign: "right", padding: "8px 10px", color: "var(--text-dim)", fontWeight: 600 }}>Claims</th>
+                              <th style={{ textAlign: "right", padding: "8px 10px", color: "var(--text-dim)", fontWeight: 600 }}>Payout</th>
+                              <th style={{ textAlign: "center", padding: "8px 10px", color: "var(--text-dim)", fontWeight: 600 }}>Risk</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {adminWorkersTable.map((w: any) => (
+                              <tr key={w.worker_id} style={{ borderBottom: "1px solid var(--border)" }}>
+                                <td style={{ padding: "8px 10px", fontWeight: 600 }}>{w.name}</td>
+                                <td style={{ padding: "8px 10px" }}>{w.city}</td>
+                                <td style={{ padding: "8px 10px", fontSize: "0.78rem", color: "var(--text-secondary)" }}>{w.zone}</td>
+                                <td style={{ padding: "8px 10px" }}>{w.platform}</td>
+                                <td style={{ padding: "8px 10px", textAlign: "center" }}>
+                                  <span className={`badge ${w.plan.startsWith("her-") ? "accent" : "success"}`} style={{ zoom: 0.85 }}>
+                                    {w.plan}
+                                  </span>
+                                </td>
+                                <td style={{ padding: "8px 10px", textAlign: "right" }}>₹{w.premium}</td>
+                                <td style={{ padding: "8px 10px", textAlign: "right", fontWeight: 600 }}>{w.total_claims}</td>
+                                <td style={{ padding: "8px 10px", textAlign: "right", fontWeight: 700, color: "var(--success)" }}>₹{w.total_payout}</td>
+                                <td style={{ padding: "8px 10px", textAlign: "center", fontWeight: 600, color: w.risk_score > 0.35 ? "var(--warning)" : "var(--success)" }}>
+                                  {(w.risk_score * 100).toFixed(0)}%
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {/* ── Payouts section ── */}
               {adminSection === "payouts" && (
                 <section>
                   <h2 style={{ fontSize: "1.5rem", marginBottom: "6px" }}>Payout Ledger</h2>
-                  <p className="subtitle" style={{ marginBottom: "20px" }}>Razorpay test-mode transactions — all UPI payouts to workers</p>
+                  <p className="subtitle" style={{ marginBottom: "20px" }}>UPI payouts to workers — auto-initiated on claim approval</p>
+
+                  {adminPayoutsLedger.length > 0 && (() => {
+                    const totalPaid = adminPayoutsLedger.filter((p: any) => p.status === "success").reduce((s: number, p: any) => s + p.amount, 0);
+                    const successRate = ((adminPayoutsLedger.filter((p: any) => p.status === "success").length / adminPayoutsLedger.length) * 100).toFixed(0);
+                    return (
+                      <div className="grid three" style={{ marginBottom: "20px" }}>
+                        <div className="stat-card">
+                          <span className="stat-label">Total Disbursed</span>
+                          <span className="stat-value" style={{ color: "var(--success)" }}>₹{Number(totalPaid).toLocaleString("en-IN")}</span>
+                        </div>
+                        <div className="stat-card">
+                          <span className="stat-label">Transactions</span>
+                          <span className="stat-value">{adminPayoutsLedger.length}</span>
+                        </div>
+                        <div className="stat-card">
+                          <span className="stat-label">Success Rate</span>
+                          <span className="stat-value" style={{ color: "var(--success)" }}>{successRate}%</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div className="card" style={{ padding: "24px" }}>
                     {adminPayoutsLedger.length === 0 ? (
