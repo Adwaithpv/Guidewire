@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
@@ -302,14 +303,61 @@ def renew_policy(worker_id: int, db: Session = Depends(get_db)) -> dict:
     )
     if latest is None:
         raise HTTPException(status_code=404, detail="No active policy")
+    worker = db.scalar(select(WorkerProfile).where(WorkerProfile.id == worker_id))
+    if worker is None:
+        raise HTTPException(status_code=404, detail="Worker not found")
+    zone = db.scalar(select(Zone).where(Zone.id == worker.primary_zone_id))
+    city = zone.city if zone else "Bengaluru"
+
+    # Recompute next week's rate at renewal time so the user sees updated pricing.
+    from app.ml.premium_model import model as ml_model
+    live = fetch_live_risk_factors_sync(city)
+    shift_exposure = shift_type_to_exposure(worker.shift_type)
+    gender = getattr(worker, "gender", None) or "prefer_not_to_say"
+
+    actuarial_plans = quote_all_plans(
+        live.rain_risk,
+        live.flood_risk,
+        live.aqi_risk,
+        live.closure_risk,
+        shift_exposure,
+        worker.avg_weekly_income,
+        city,
+        gender=gender,
+    )
+    plan_row = next((p for p in actuarial_plans if p["plan_id"] == latest.plan_name), None)
+    if plan_row is None:
+        raise HTTPException(status_code=400, detail="Unknown plan for renewal")
+
+    ml_premium = ml_model.predict_premium(
+        live.rain_risk,
+        live.flood_risk,
+        live.aqi_risk,
+        live.closure_risk,
+        shift_exposure,
+        worker.avg_weekly_income,
+        city,
+    )
+    plan_cfg = PLANS.get(latest.plan_name)
+    if plan_cfg is None:
+        raise HTTPException(status_code=400, detail="Unknown plan config for renewal")
+
+    blended_premium = blend_premium(
+        actuarial=float(plan_row["premium_weekly"]),
+        ml_premium=ml_premium,
+        floor=float(plan_cfg["min_premium"]),
+        ceiling=float(plan_cfg["max_premium"]),
+        ml_weight=0.20,
+    )
+
     old_triggers = db.scalars(select(PolicyTrigger).where(PolicyTrigger.policy_id == latest.id)).all()
     latest.status = "superseded"
     start, end = coverage_window(latest.coverage_end)
     renewed = Policy(
         worker_id=latest.worker_id,
         plan_name=latest.plan_name,
-        premium_weekly=latest.premium_weekly,
-        max_weekly_payout=latest.max_weekly_payout,
+        premium_weekly=blended_premium,
+        max_weekly_payout=float(plan_row["max_weekly_payout"]),
         coverage_start=start,
         coverage_end=end,
         status="active",
@@ -328,4 +376,57 @@ def renew_policy(worker_id: int, db: Session = Depends(get_db)) -> dict:
         )
     db.commit()
     db.refresh(renewed)
-    return {"policy_id": renewed.id, "status": renewed.status}
+    return {
+        "policy_id": renewed.id,
+        "status": renewed.status,
+        "plan_name": renewed.plan_name,
+        "premium_weekly": float(renewed.premium_weekly),
+        "max_weekly_payout": float(renewed.max_weekly_payout),
+        "city": city,
+        "fetched_at": live.fetched_at,
+    }
+
+
+class AutoRenewRequest(BaseModel):
+    enabled: bool
+
+
+@router.post("/auto-renew/{worker_id}")
+def set_auto_renew(worker_id: int, payload: AutoRenewRequest, db: Session = Depends(get_db)) -> dict:
+    policy = db.scalar(
+        select(Policy).where(and_(Policy.worker_id == worker_id, Policy.status == "active")).order_by(Policy.id.desc())
+    )
+    if policy is None:
+        raise HTTPException(status_code=404, detail="No active policy")
+    policy.auto_renew = bool(payload.enabled)
+    db.commit()
+    db.refresh(policy)
+    return {"worker_id": worker_id, "auto_renew": bool(policy.auto_renew)}
+
+
+@router.get("/renewal-preview/{worker_id}")
+def renewal_preview(worker_id: int, db: Session = Depends(get_db)) -> dict:
+    """
+    Preview next week's rates before the current weekly policy expires.
+    Uses the same quote logic as /quote-plans, and returns current policy metadata.
+    """
+    policy = db.scalar(
+        select(Policy).where(and_(Policy.worker_id == worker_id, Policy.status == "active")).order_by(Policy.id.desc())
+    )
+    if policy is None:
+        raise HTTPException(status_code=404, detail="No active policy")
+
+    quote = policy_quote_plans(worker_id=worker_id, db=db)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    days_remaining = max(0, (policy.coverage_end - now).days) if policy.coverage_end else 0
+    return {
+        "current": {
+            "policy_id": policy.id,
+            "plan_name": policy.plan_name,
+            "auto_renew": bool(policy.auto_renew),
+            "coverage_start": policy.coverage_start,
+            "coverage_end": policy.coverage_end,
+            "days_remaining": days_remaining,
+        },
+        "next_week_quote": quote,
+    }

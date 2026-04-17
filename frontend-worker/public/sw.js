@@ -1,5 +1,7 @@
-const CACHE_NAME = "surakshashift-v4";
-const PRECACHE = ["/", "/manifest.json"];
+// NOTE: Do NOT precache "/" (index.html). Vite builds produce hashed assets and
+// caching HTML across deploys causes 404s for old hashed filenames.
+const CACHE_NAME = "surakshashift-v5";
+const PRECACHE = ["/manifest.json"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -23,6 +25,15 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   const isHttp = url.protocol === "http:" || url.protocol === "https:";
   if (!isHttp) return;
+
+  // Navigation requests (index.html) should be network-first to avoid stale HTML
+  // referencing removed hashed asset files after redeploy.
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request).catch(() => caches.match("/"))
+    );
+    return;
+  }
 
   // Network-first for API calls
   if (

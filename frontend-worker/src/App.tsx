@@ -215,6 +215,12 @@ function App() {
   const [adminFilterCity, setAdminFilterCity] = useState<string>("");
   const [adminFilterPlan, setAdminFilterPlan] = useState<string>("");
 
+  // Policy renewal preview + mock autopay
+  const [renewalPreview, setRenewalPreview] = useState<any>(null);
+  const [renewalLoading, setRenewalLoading] = useState(false);
+  const [autoRenewSaving, setAutoRenewSaving] = useState(false);
+  const [autoRenewRunOnce, setAutoRenewRunOnce] = useState(false);
+
   // Dashboard data refresh
   const fetchDashboardData = useCallback(async () => {
     if (!workerId) return;
@@ -347,6 +353,34 @@ function App() {
     }
   }, [workerId, resolveCurrentLocation]);
 
+  const fetchRenewalPreview = useCallback(async () => {
+    if (!workerId) return;
+    setRenewalLoading(true);
+    try {
+      const res = await api.getRenewalPreview(workerId);
+      setRenewalPreview(res);
+    } catch (e) {
+      console.error(e);
+      alert("Could not load next week preview. Please try again.");
+    } finally {
+      setRenewalLoading(false);
+    }
+  }, [workerId]);
+
+  const setAutoRenew = useCallback(async (enabled: boolean) => {
+    if (!workerId) return;
+    setAutoRenewSaving(true);
+    try {
+      await api.setAutoRenew(workerId, { enabled });
+      await fetchDashboardData(); // refresh policies list
+    } catch (e) {
+      console.error(e);
+      alert("Could not update autopay setting.");
+    } finally {
+      setAutoRenewSaving(false);
+    }
+  }, [workerId, fetchDashboardData]);
+
   useEffect(() => {
     let interval: number;
     if (view === "dashboard" && workerId) {
@@ -359,6 +393,23 @@ function App() {
     }
     return () => clearInterval(interval);
   }, [view, workerId, fetchDashboardData, fetchLiveRisk]);
+
+  // Mock autopay: if policy expired and auto_renew is on, renew once.
+  useEffect(() => {
+    if (view !== "dashboard") return;
+    if (!workerId) return;
+    if (autoRenewRunOnce) return;
+    const daysRemaining = workerProtection?.active_coverage?.days_remaining;
+    const activePolicy = policies.find((p: any) => p.status === "active");
+    if (daysRemaining == null) return;
+    if (!activePolicy?.auto_renew) return;
+    if (daysRemaining > 0) return;
+
+    setAutoRenewRunOnce(true);
+    api.renewPolicy(workerId)
+      .then(() => fetchDashboardData())
+      .catch((e) => console.error(e));
+  }, [view, workerId, workerProtection?.active_coverage?.days_remaining, policies, autoRenewRunOnce, fetchDashboardData]);
 
   // Auto-fill location on sign up to avoid city/area mismatch.
   useEffect(() => {
@@ -2472,6 +2523,55 @@ function App() {
           <div className="card">
             {activePolicy ? (
               <>
+                {/* Next week preview (shown when policy is close to ending) */}
+                {typeof workerProtection?.active_coverage?.days_remaining === "number" && workerProtection.active_coverage.days_remaining <= 2 && (
+                  <div style={{ marginBottom: "16px", padding: "14px 16px", borderRadius: "14px", background: "var(--surface-raised)", border: "1px solid var(--border)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
+                      <div>
+                        <div style={{ fontWeight: 800, color: "var(--navy)", marginBottom: "4px" }}>Next week rates</div>
+                        <div style={{ fontSize: "0.84rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                          Preview next week's premium before this policy ends. Rates update based on live risk in your city.
+                        </div>
+                      </div>
+                      <button type="button" className="btn-ghost" onClick={fetchRenewalPreview} disabled={renewalLoading} style={{ padding: "8px 12px", fontSize: "0.82rem" }}>
+                        {renewalLoading ? "Loading…" : "View preview"}
+                      </button>
+                    </div>
+
+                    {renewalPreview?.next_week_quote?.plans?.length > 0 && (
+                      <div style={{ marginTop: "12px", display: "grid", gap: "10px" }}>
+                        {(renewalPreview.next_week_quote.plans as any[]).map((p: any) => (
+                          <div key={p.plan_id} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "10px 12px", borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surface)" }}>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "0.95rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.label}</div>
+                              <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "2px" }}>Up to ₹{Number(p.max_weekly_payout).toFixed(0)} / week</div>
+                            </div>
+                            <div style={{ textAlign: "right", flexShrink: 0 }}>
+                              <div style={{ fontWeight: 900, color: "var(--accent-hover)" }}>₹{Number(p.premium_weekly).toFixed(0)}</div>
+                              <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>/week</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div style={{ marginTop: "12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                      <div style={{ fontSize: "0.84rem", color: "var(--text-secondary)" }}>
+                        <strong style={{ color: "var(--navy)" }}>Autopay (mock):</strong> automatically renews your policy when this term ends.
+                      </div>
+                      <button
+                        type="button"
+                        className="landing-signin"
+                        onClick={() => setAutoRenew(!activePolicy.auto_renew)}
+                        disabled={autoRenewSaving}
+                        style={{ padding: "8px 12px", fontSize: "0.82rem" }}
+                      >
+                        {autoRenewSaving ? "Saving…" : activePolicy.auto_renew ? "Autopay: ON" : "Autopay: OFF"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid two" style={{ gap: "20px", gridTemplateColumns: "1fr 1fr" }}>
                   <div>
                     <span className="stat-label">Status</span>

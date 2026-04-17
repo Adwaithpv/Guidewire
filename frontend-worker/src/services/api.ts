@@ -21,6 +21,10 @@ export type WorkerLocationPayload = {
   zone_name: string;
 };
 
+export type AutoRenewPayload = {
+  enabled: boolean;
+};
+
 export type RiskQuotePayload = {
   worker_id: number;
   city: string;
@@ -115,6 +119,16 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
+  getRenewalPreview: (workerId: number) =>
+    request(`${API_BASE}/policies/renewal-preview/${workerId}`),
+  setAutoRenew: (workerId: number, data: AutoRenewPayload) =>
+    request(`${API_BASE}/policies/auto-renew/${workerId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
+  renewPolicy: (workerId: number) =>
+    request(`${API_BASE}/policies/renew?worker_id=${workerId}`, { method: "POST" }),
   getPolicies: (workerId: number) =>
     request(`${API_BASE}/policies/${workerId}`),
 
