@@ -1396,7 +1396,7 @@ button:disabled {
   font-family: "Outfit", system-ui, sans-serif;
   font-size: 1.35rem;
   font-weight: 800;
-  color: var(--navy);
+  color: rgba(238, 245, 255, 0.92);
   letter-spacing: -0.02em;
 }
 .condition-label {
@@ -1420,20 +1420,20 @@ button:disabled {
   align-items: center;
   gap: 12px;
   font-size: 0.8rem;
-  color: var(--text-primary);
+  color: rgba(232, 242, 255, 0.9);
 }
 .risk-meter > span:first-child {
   width: 88px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: rgba(197, 214, 242, 0.82);
 }
 .meter-bar {
   flex: 1;
   height: 8px;
-  background: var(--bg-alt);
+  background: rgba(255, 255, 255, 0.10);
   border-radius: var(--radius-pill);
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.10);
 }
 .meter-fill {
   height: 100%;
@@ -1454,7 +1454,24 @@ button:disabled {
   text-align: right;
   font-weight: 700;
   font-size: 0.78rem;
-  color: var(--navy);
+  color: rgba(232, 242, 255, 0.88);
+}
+
+/* Admin mini bar (used in Claims by Trigger Type) */
+.admin-mini-bar {
+  margin-top: 6px;
+  height: 8px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+.admin-mini-bar__fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--accent-gradient);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+  transition: width 0.45s var(--transition-smooth);
 }
 
 .overall-risk {
@@ -1999,6 +2016,7 @@ button:disabled {
   border-color: var(--accent) !important;
   background: var(--accent-light) !important;
   box-shadow: 0 0 0 3px rgba(234, 120, 50, 0.18);
+  color: var(--text-primary) !important;
 }
 .lang-option-native {
   font-size: 1.1rem;
@@ -2007,6 +2025,14 @@ button:disabled {
 .lang-option-en {
   font-size: 0.72rem;
   color: var(--text-dim);
+}
+
+/* Keep selected language high-contrast (avoid washed-out look) */
+.lang-option-active .lang-option-native {
+  color: var(--text-primary);
+}
+.lang-option-active .lang-option-en {
+  color: var(--text-secondary);
 }
 
 .lang-switch-btn {
@@ -2023,6 +2049,19 @@ button:disabled {
 .lang-switch-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+/* Landing header sits on light surface: make language button readable */
+.landing .lang-switch-btn {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: var(--border-strong);
+  color: var(--accent-hover);
+  box-shadow: 0 10px 22px rgba(20, 22, 72, 0.10);
+}
+.landing .lang-switch-btn:hover {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent-hover);
 }
 
 /* Profile page grid for small language selector */
@@ -2049,6 +2088,7 @@ button:disabled {
 .lang-option-small.lang-option-active {
   border-color: var(--accent);
   background: var(--accent-light);
+  color: var(--text-primary);
 }
 
 /* Profile detail rows */

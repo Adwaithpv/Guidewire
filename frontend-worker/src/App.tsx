@@ -3213,8 +3213,8 @@ function App() {
                                 <span className="item-title">
                                   <EventIcon type={row.event_type} size={18} /> {String(row.event_type || "").replace(/_/g, " ")}
                                 </span>
-                                <div style={{ background: "var(--surface-raised)", borderRadius: "6px", height: "8px", marginTop: "6px", overflow: "hidden" }}>
-                                  <div style={{ height: "100%", borderRadius: "6px", background: "var(--primary)", width: `${(row.count / maxCount) * 100}%` }} />
+                                <div className="admin-mini-bar">
+                                  <div className="admin-mini-bar__fill" style={{ width: `${(row.count / maxCount) * 100}%` }} />
                                 </div>
                               </div>
                               <div className="item-amount">{row.count}</div>
