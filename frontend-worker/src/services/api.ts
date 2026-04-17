@@ -25,6 +25,10 @@ export type AutoRenewPayload = {
   enabled: boolean;
 };
 
+export type RenewalPreferencePayload = {
+  next_plan_id: string;
+};
+
 export type RiskQuotePayload = {
   worker_id: number;
   city: string;
@@ -123,6 +127,12 @@ export const api = {
     request(`${API_BASE}/policies/renewal-preview/${workerId}`),
   setAutoRenew: (workerId: number, data: AutoRenewPayload) =>
     request(`${API_BASE}/policies/auto-renew/${workerId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
+  setRenewalPreference: (workerId: number, data: RenewalPreferencePayload) =>
+    request(`${API_BASE}/policies/renewal-preference/${workerId}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),

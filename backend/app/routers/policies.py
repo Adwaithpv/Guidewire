@@ -315,6 +315,9 @@ def renew_policy(worker_id: int, db: Session = Depends(get_db)) -> dict:
     shift_exposure = shift_type_to_exposure(worker.shift_type)
     gender = getattr(worker, "gender", None) or "prefer_not_to_say"
 
+    # If user selected a different tier for next week, renew into that plan.
+    preferred_plan = getattr(worker, "preferred_next_plan", None) or latest.plan_name
+
     actuarial_plans = quote_all_plans(
         live.rain_risk,
         live.flood_risk,
@@ -325,7 +328,7 @@ def renew_policy(worker_id: int, db: Session = Depends(get_db)) -> dict:
         city,
         gender=gender,
     )
-    plan_row = next((p for p in actuarial_plans if p["plan_id"] == latest.plan_name), None)
+    plan_row = next((p for p in actuarial_plans if p["plan_id"] == preferred_plan), None)
     if plan_row is None:
         raise HTTPException(status_code=400, detail="Unknown plan for renewal")
 
@@ -338,7 +341,7 @@ def renew_policy(worker_id: int, db: Session = Depends(get_db)) -> dict:
         worker.avg_weekly_income,
         city,
     )
-    plan_cfg = PLANS.get(latest.plan_name)
+    plan_cfg = PLANS.get(preferred_plan)
     if plan_cfg is None:
         raise HTTPException(status_code=400, detail="Unknown plan config for renewal")
 
@@ -355,7 +358,7 @@ def renew_policy(worker_id: int, db: Session = Depends(get_db)) -> dict:
     start, end = coverage_window(latest.coverage_end)
     renewed = Policy(
         worker_id=latest.worker_id,
-        plan_name=latest.plan_name,
+        plan_name=preferred_plan,
         premium_weekly=blended_premium,
         max_weekly_payout=float(plan_row["max_weekly_payout"]),
         coverage_start=start,
@@ -404,6 +407,24 @@ def set_auto_renew(worker_id: int, payload: AutoRenewRequest, db: Session = Depe
     return {"worker_id": worker_id, "auto_renew": bool(policy.auto_renew)}
 
 
+class RenewalPreferenceRequest(BaseModel):
+    next_plan_id: str
+
+
+@router.post("/renewal-preference/{worker_id}")
+def set_renewal_preference(worker_id: int, payload: RenewalPreferenceRequest, db: Session = Depends(get_db)) -> dict:
+    worker = db.scalar(select(WorkerProfile).where(WorkerProfile.id == worker_id))
+    if worker is None:
+        raise HTTPException(status_code=404, detail="Worker not found")
+    plan_id = (payload.next_plan_id or "").strip()
+    if plan_id not in PLANS:
+        raise HTTPException(status_code=400, detail="Unknown plan tier")
+    worker.preferred_next_plan = plan_id
+    db.commit()
+    db.refresh(worker)
+    return {"worker_id": worker_id, "preferred_next_plan": worker.preferred_next_plan}
+
+
 @router.get("/renewal-preview/{worker_id}")
 def renewal_preview(worker_id: int, db: Session = Depends(get_db)) -> dict:
     """
@@ -419,11 +440,13 @@ def renewal_preview(worker_id: int, db: Session = Depends(get_db)) -> dict:
     quote = policy_quote_plans(worker_id=worker_id, db=db)
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     days_remaining = max(0, (policy.coverage_end - now).days) if policy.coverage_end else 0
+    worker = db.scalar(select(WorkerProfile).where(WorkerProfile.id == worker_id))
     return {
         "current": {
             "policy_id": policy.id,
             "plan_name": policy.plan_name,
             "auto_renew": bool(policy.auto_renew),
+            "preferred_next_plan": (worker.preferred_next_plan if worker else None) or policy.plan_name,
             "coverage_start": policy.coverage_start,
             "coverage_end": policy.coverage_end,
             "days_remaining": days_remaining,

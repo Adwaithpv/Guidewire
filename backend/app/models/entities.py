@@ -46,6 +46,8 @@ class WorkerProfile(Base):
     gps_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     payout_upi: Mapped[str] = mapped_column(String(120))
     gender: Mapped[str | None] = mapped_column(String(20), nullable=True, default="prefer_not_to_say")
+    # Renewal preference: which tier to start next week when auto_renew is enabled.
+    preferred_next_plan: Mapped[str | None] = mapped_column(String(50), nullable=True, default=None)
     risk_score: Mapped[float] = mapped_column(Float, default=0.0)
 
     user: Mapped[User] = relationship()

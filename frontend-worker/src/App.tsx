@@ -220,6 +220,8 @@ function App() {
   const [renewalLoading, setRenewalLoading] = useState(false);
   const [autoRenewSaving, setAutoRenewSaving] = useState(false);
   const [autoRenewRunOnce, setAutoRenewRunOnce] = useState(false);
+  const [nextPlanChoice, setNextPlanChoice] = useState<string>("");
+  const [nextPlanSaving, setNextPlanSaving] = useState(false);
 
   // Dashboard data refresh
   const fetchDashboardData = useCallback(async () => {
@@ -359,6 +361,8 @@ function App() {
     try {
       const res = await api.getRenewalPreview(workerId);
       setRenewalPreview(res);
+      const preferred = res?.current?.preferred_next_plan || res?.current?.plan_name || "";
+      setNextPlanChoice(preferred);
     } catch (e) {
       console.error(e);
       alert("Could not load next week preview. Please try again.");
@@ -380,6 +384,20 @@ function App() {
       setAutoRenewSaving(false);
     }
   }, [workerId, fetchDashboardData]);
+
+  const saveNextPlanPreference = useCallback(async (planId: string) => {
+    if (!workerId) return;
+    setNextPlanSaving(true);
+    try {
+      await api.setRenewalPreference(workerId, { next_plan_id: planId });
+      await fetchRenewalPreview();
+    } catch (e) {
+      console.error(e);
+      alert("Could not save next week tier.");
+    } finally {
+      setNextPlanSaving(false);
+    }
+  }, [workerId, fetchRenewalPreview]);
 
   useEffect(() => {
     let interval: number;
@@ -2541,7 +2559,25 @@ function App() {
                     {renewalPreview?.next_week_quote?.plans?.length > 0 && (
                       <div style={{ marginTop: "12px", display: "grid", gap: "10px" }}>
                         {(renewalPreview.next_week_quote.plans as any[]).map((p: any) => (
-                          <div key={p.plan_id} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "10px 12px", borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surface)" }}>
+                          <button
+                            key={p.plan_id}
+                            type="button"
+                            onClick={() => { setNextPlanChoice(p.plan_id); saveNextPlanPreference(p.plan_id); }}
+                            disabled={nextPlanSaving}
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "baseline",
+                              padding: "10px 12px",
+                              borderRadius: "12px",
+                              border: `1px solid ${nextPlanChoice === p.plan_id ? "var(--accent)" : "var(--border)"}`,
+                              background: nextPlanChoice === p.plan_id ? "var(--accent-light)" : "var(--surface)",
+                              width: "100%",
+                              cursor: "pointer",
+                              boxShadow: "none",
+                              transform: "none",
+                            }}
+                          >
                             <div style={{ minWidth: 0 }}>
                               <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "0.95rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.label}</div>
                               <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "2px" }}>Up to ₹{Number(p.max_weekly_payout).toFixed(0)} / week</div>
@@ -2550,8 +2586,11 @@ function App() {
                               <div style={{ fontWeight: 900, color: "var(--accent-hover)" }}>₹{Number(p.premium_weekly).toFixed(0)}</div>
                               <div style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>/week</div>
                             </div>
-                          </div>
+                          </button>
                         ))}
+                        <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                          Tap a tier to set it as your <strong style={{ color: "var(--navy)" }}>next week plan</strong>.
+                        </div>
                       </div>
                     )}
 

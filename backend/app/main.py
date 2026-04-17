@@ -59,6 +59,12 @@ def _ensure_sqlite_columns() -> None:
                         "ALTER TABLE worker_profiles ADD COLUMN gender VARCHAR(20) DEFAULT 'prefer_not_to_say'"
                     )
                 )
+            if "preferred_next_plan" not in col_names:
+                conn.execute(
+                    text(
+                        "ALTER TABLE worker_profiles ADD COLUMN preferred_next_plan VARCHAR(50) DEFAULT NULL"
+                    )
+                )
     except Exception:
         # Never fail startup for best-effort migrations in demo mode.
         return
