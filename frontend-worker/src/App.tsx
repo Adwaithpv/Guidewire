@@ -196,6 +196,7 @@ function App() {
   const [waConfigured, setWaConfigured] = useState<boolean | null>(null);
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationNotice, setLocationNotice] = useState<string | null>(null);
+  const [registerLocationAutoFilled, setRegisterLocationAutoFilled] = useState(false);
 
   // Phase 3 state
   const [workerProtection, setWorkerProtection] = useState<any>(null);
@@ -287,16 +288,20 @@ function App() {
         const b = c.toLowerCase();
         return a.includes(b) || b.includes(a);
       });
-      city = matched || formData.city || "Bengaluru";
+      // IMPORTANT: never mix user-selected city with detected locality.
+      // If we can map to a supported city, use it; else fall back to detected city or Bengaluru.
+      city = matched || String(detectedCity || "").trim() || "Bengaluru";
       locality = String(detectedLocality || "").trim();
     } catch {
-      city = formData.city || "Bengaluru";
+      city = "Bengaluru";
       locality = "";
     }
 
-    const zone_name = locality ? `${locality}, ${city}` : `Current location, ${city}`;
+    // Our DB stores zones like "Anna Nagar", "HSR Layout" etc.
+    // Do NOT append city to the zone string (it will break Zone lookups).
+    const zone_name = locality || formData.primary_zone || "HSR Layout";
     return { city, zone_name };
-  }, [formData.city]);
+  }, [formData.primary_zone]);
 
   const useCurrentLocationForRegistration = useCallback(async () => {
     setLocationLoading(true);
@@ -308,7 +313,7 @@ function App() {
         city: loc.city,
         primary_zone: loc.zone_name,
       }));
-      setLocationNotice(`Detected: ${loc.zone_name}`);
+      setLocationNotice(`Detected: ${loc.zone_name} (${loc.city})`);
     } catch (e) {
       setLocationNotice(
         e instanceof Error
@@ -354,6 +359,14 @@ function App() {
     }
     return () => clearInterval(interval);
   }, [view, workerId, fetchDashboardData, fetchLiveRisk]);
+
+  // Auto-fill location on sign up to avoid city/area mismatch.
+  useEffect(() => {
+    if (view !== "register") return;
+    if (registerLocationAutoFilled) return;
+    setRegisterLocationAutoFilled(true);
+    useCurrentLocationForRegistration();
+  }, [view, registerLocationAutoFilled, useCurrentLocationForRegistration]);
 
   useEffect(() => {
     api.getWhatsappStatus().then(r => setWaConfigured(r.configured)).catch(() => setWaConfigured(false));
@@ -424,8 +437,18 @@ function App() {
     try {
       const selectedPlatforms = (formData.platform_names || []).filter(Boolean);
       const normalizedPlatforms = selectedPlatforms.length > 0 ? selectedPlatforms : [formData.platform_name || "Zepto"];
+      // Enforce live location at signup to prevent mismatches like "Anna Nagar, Bengaluru".
+      let loc: { city: string; zone_name: string } | null = null;
+      try {
+        loc = await resolveCurrentLocation();
+      } catch {
+        loc = null;
+      }
+
       const res = await api.createProfile({
         ...formData,
+        city: loc?.city || formData.city,
+        primary_zone: loc?.zone_name || formData.primary_zone,
         platform_name: normalizedPlatforms[0],
         platform_names: normalizedPlatforms,
         avg_weekly_income: Number(formData.avg_weekly_income),
@@ -771,7 +794,7 @@ function App() {
             </svg>
             <span className="landing-brand-text">SurakshaShift</span>
           </div>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <div className="landing-actions">
             <button type="button" className="lang-switch-btn" onClick={() => setView("language")} title="Change language">
               {LANGUAGES.find(l => l.code === lang)?.nativeLabel ?? "EN"}
             </button>
@@ -1067,11 +1090,14 @@ function App() {
               </div>
               <div className="form-group">
                 <label>{t("reg_city")}</label>
-                <select value={formData.city} onChange={e => setFormData({ ...formData, city: e.target.value })}>
+                <select value={formData.city} disabled onChange={e => setFormData({ ...formData, city: e.target.value })}>
                   {SUPPORTED_CITIES.map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
+                <div style={{ marginTop: "6px", fontSize: "0.78rem", color: "var(--text-muted)", lineHeight: 1.4 }}>
+                  City is auto-detected from your current GPS location. You can change it later in Profile settings.
+                </div>
               </div>
             </div>
             <div className="form-group">

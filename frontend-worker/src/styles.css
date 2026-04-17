@@ -122,6 +122,14 @@ h6 {
   z-index: 20;
 }
 
+.landing-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
 .landing-brand {
   display: flex;
   align-items: center;
@@ -314,10 +322,31 @@ h6 {
 
 @media (max-width: 480px) {
   .landing-nav {
-    padding: 16px 18px;
+    padding: 12px 14px;
+    gap: 10px;
+    flex-wrap: wrap;
   }
   .landing-main {
     padding: 0 18px 40px;
+  }
+  .landing-brand-text {
+    font-size: 1.05rem;
+  }
+  .landing-actions {
+    width: 100%;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .landing-signin {
+    padding: 8px 12px;
+    font-size: 0.78rem;
+    border-radius: 12px;
+    white-space: nowrap;
+  }
+  .landing .lang-switch-btn {
+    padding: 6px 10px;
+    font-size: 0.74rem;
+    white-space: nowrap;
   }
 }
 
@@ -426,17 +455,30 @@ h6 {
   gap: 10px;
   padding: 12px 14px;
   border-radius: 12px;
-  background: rgba(19, 30, 50, 0.75);
-  border: 1px solid rgba(125, 162, 226, 0.22);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+.consent-box label {
+  color: var(--text-secondary);
+}
+.consent-box button {
+  box-shadow: none !important;
 }
 .privacy-panel {
   font-size: 0.78rem;
   color: var(--text-secondary);
   line-height: 1.55;
   border: 1px solid var(--border);
-  background: rgba(16, 25, 42, 0.8);
+  background: var(--surface-raised);
   border-radius: 10px;
   padding: 10px 12px;
+}
+.privacy-panel strong {
+  color: var(--navy);
+}
+.privacy-panel li {
+  color: var(--text-secondary);
 }
 
 .compliance-note {
@@ -465,12 +507,14 @@ h6 {
   width: 100%;
   padding: 14px 18px;
   border-radius: 14px;
-  border: 1px solid rgba(125, 162, 226, 0.26);
-  background: rgba(19, 31, 52, 0.78);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
 }
 .price-explain-panel h3 {
   margin: 0 0 4px;
   font-size: 1rem;
+  color: var(--navy);
 }
 .price-explain-panel p {
   margin: 0 0 8px;
@@ -483,6 +527,9 @@ h6 {
   color: var(--text-secondary);
   font-size: 0.8rem;
   line-height: 1.55;
+}
+.price-explain-panel li {
+  margin: 4px 0;
 }
 
 .claim-reason-text {

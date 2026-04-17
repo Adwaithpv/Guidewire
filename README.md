@@ -1,63 +1,235 @@
-# SurakshaShift AI
+# SurakshaShift — Hyperlocal Income Protection for Gig Workers (Phase 3)
 
-### Hyperlocal Income Protection for Delivery Partners in Q-Commerce
+SurakshaShift is a **mobile-first Progressive Web App** that provides **weekly parametric income protection** for gig workers (Swiggy/Zepto/Blinkit/Zomato/Dunzo).
 
-*AI-Powered Parametric Insurance for India's Q-Commerce Delivery Workers*
+It uses **zone-level disruption signals** (weather, flood, AQI, curfew/closure, platform outage) to:
+- **Quote dynamic weekly premiums**
+- **Activate coverage tiers**
+- **Auto-create claims**
+- **Run fraud checks**
+- **Trigger payouts**
+- **Notify workers on WhatsApp**
+- Provide an **investor-ready insurer admin dashboard** with KPIs, trends, worker table, and filters
 
-> **Team SharkBYTE · Guidewire DEVTrails 2026** · Phase 2 worker prototype + API
-
-**Live worker app:** [https://sharkbytedevtrail.vercel.app/](https://sharkbytedevtrail.vercel.app/) — try the full flow in the browser (ensure the deployed API is reachable from `VITE_API_BASE` if you self-host the backend).
+> **Team SharkBYTE · Guidewire DEVTrails 2026**
 
 ---
 
-## Repository overview
+## What we built (end-to-end)
 
-| Path | What it is |
-|------|------------|
-| **`backend/`** | **FastAPI** app — SQLite by default, parametric event ingest, tiered pricing (actuarial + GBM), fraud scoring, claims, **Shift Guardian**, live risk factors (weather / AQI / news closure). |
-| **`frontend-worker/`** | **React 18 + Vite + TypeScript** — light fintech UI: OTP → profile → live quote → dashboard (policy, **My claims**, live conditions, disruption **simulator** with step-by-step claim pipeline animation). |
+### Worker app (PWA)
+- **Phone-number OTP login** (demo OTP: `123456`)
+- **Registration + consent gating**
+  - The profile form is **not accessible without consent**
+  - Stores consent in DB (`DataConsent`) with version + timestamps
+- **Multi-platform rider support**
+  - Worker can select multiple platforms (e.g., Zepto + Swiggy) during onboarding
+- **Live “Weather & Air Quality”** panel
+  - Shows live inputs (temperature, rain, wind, AQI) + **risk meters**
+- **Policy tiers & activation** (weekly)
+  - Clear tier explanations + “Why this price?” explainability panel
+- **Claims pipeline**
+  - Auto-claims (parametric) + plain-language decision reasons
+  - **Raise a Dispute** button for rejected claims
+- **Shift Guardian**
+  - Recommends **safer / higher-earning zones** inside the city using zone risk and live signals
+- **Multi-language UI**
+  - Language selection screen before auth
+  - Language can be changed later from Profile
+  - Included Indian languages (English + Hindi/Tamil/Kannada/Telugu/Marathi)
 
-### Quick start
+### WhatsApp integration (Twilio)
+- **Outbound notifications** for:
+  - registration welcome message
+  - policy activated
+  - Shift Guardian recommendation
+  - claim / payout messages (status + reference ID)
+- **Sandbox testing mode support**
+  - Redirect all outbound messages to a single joined number using:
+    - `TWILIO_WHATSAPP_OVERRIDE_TO=9884922459`
+- **Inbound WhatsApp bot (webhook)**
+  - Login gate: `login` → phone → OTP `123456`
+  - Commands: `status`, `claims`, `risk`, `guardian`, `help`, `logout`
+  - Sensitive commands are blocked until login completes
 
-```bash
-# API (from repo root)
-cd backend
-python -m venv .venv
-# Windows: .venv\Scripts\activate  ·  macOS/Linux: source .venv/bin/activate
-pip install -r requirements.txt
-# Copy .env.example → .env (optional keys; mocks work when empty)
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+### Fraud detection (explainable)
+For each claim we compute and store a fraud assessment (one per claim), including:
+- GPS integrity / zone mismatch score
+- Activity & anomaly heuristics
+- Duplicate / velocity patterns
+- Source confidence
+- Final fraud score + review status:
+  - `auto_approve` (low)
+  - `soft_review` (medium)
+  - `manual_review` (high)
+
+### Admin / insurer dashboard (investor-ready)
+- **Filters**: City + Plan tier (applies to KPI panels + tables)
+- **Overview**:
+  - Active workers, premiums, payouts, loss ratio
+  - Rejected claims, avg claim value
+  - **Plan distribution** bars
+  - **Weekly trends** (last 4 weeks)
+- **Workers directory**:
+  - Worker table with **phone**, city, zone, platform, plan, premium, claims count, payouts, risk score
+- **Claims by trigger type** visualization
+- **Fraud dashboard** (counts + high-risk claims table)
+- **Payout ledger** with totals and success rate
+
+---
+
+## Repository structure
+
+```text
+backend/
+  app/
+    main.py                   # FastAPI + CORS + startup hooks
+    database.py               # DB engine/session
+    models/entities.py        # SQLAlchemy models
+    routers/                  # API endpoints
+    services/                 # pricing, triggers, fraud, whatsapp, guardian, etc.
+  seed_demo_data.py           # demo data generator (investor dashboard)
+
+frontend-worker/
+  src/
+    App.tsx                   # landing/otp/register/dashboard/admin/profile/language
+    services/api.ts           # typed API client
+    i18n/                     # translations + LanguageContext
+    styles.css
+  public/
+    manifest.json
+    sw.js
 ```
 
+---
+
+## Local setup
+
+### 1) Backend (FastAPI)
+
+From repo root:
+
 ```bash
-# Worker UI
+cd backend
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+### 2) Frontend (Vite)
+
+From repo root:
+
+```bash
 cd frontend-worker
 npm install
-# Copy .env.example → .env (set VITE_API_BASE if API is not localhost:8000)
 npm run dev
 ```
 
-**Local:** open the Vite URL (e.g. `http://localhost:5173`). **Hosted:** use the [live app](https://sharkbytedevtrail.vercel.app/). **Demo OTP:** `123456`. Recommended evaluator flow: register → quote → activate policy → **Shift Guardian** → run a **simulator** trigger → watch **Automatic claim flow** → open **My claims**.
+Demo OTP: `123456`
 
-```bash
-# Production build (CI-friendly)
-cd frontend-worker && npm run build
+---
+
+## Environment variables
+
+### Backend `.env`
+
+```env
+DATABASE_URL=sqlite:///./surakshashift.db
+
+# CORS (for Vercel → Render)
+CORS_ORIGINS=*
+# Or lock down:
+# CORS_ORIGINS=https://your-vercel-app.vercel.app
+# CORS_ALLOW_CREDENTIALS=false
+
+# Twilio WhatsApp
+TWILIO_ACCOUNT_SID=...
+TWILIO_AUTH_TOKEN=...
+TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
+
+# Sandbox testing: redirect all outbound to one joined number
+TWILIO_WHATSAPP_OVERRIDE_TO=9884922459
 ```
 
-### Environment variables
+### Frontend `.env`
 
-**`backend/.env`** (see `backend/.env.example`)
+```env
+VITE_API_BASE=http://localhost:8000
+```
 
-| Variable | Role |
-|----------|------|
-| `OPENWEATHERMAP_API_KEY` | OpenWeatherMap for live weather / rainfall in quotes |
-| `WAQI_API_TOKEN` | WAQI for AQI |
-| `NEWSDATA_API_KEY` | Preferred source for India closure/bandh headlines |
-| `GNEWS_API_KEY` | Fallback news API if NewsData is unset or fails |
-| `DATABASE_URL` | Default `sqlite:///./surakshashift.db` |
-| `CORS_ORIGINS` | `*` in dev; comma-separated origins in production |
+---
 
-**`frontend-worker/.env`** — `VITE_API_BASE` (API origin, default `http://localhost:8000`).
+## Demo dataset (Investor/Admin dashboard)
+
+Run the deterministic seed script:
+
+```bash
+cd backend
+python seed_demo_data.py
+```
+
+It creates 20 realistic workers + 12 weeks of policies, events, claims, fraud checks, and payouts, calibrated to show:
+- Loss ratio ~55–65%
+- BCR > 1.5
+
+### Demo login phones (OTP `123456`)
+
+The seed script assigns fixed phone numbers so each demo user can be accessed via phone-based login.
+
+Examples:
+- `9876543203` → Priya Sharma
+- `9876543210` → Manoj Joshi
+- `9876543216` → Sanjay Verma
+
+(Full list prints at the end of seeding.)
+
+---
+
+## Admin analytics API (filters + new endpoints)
+
+All aggregate endpoints support:
+- `city` (optional)
+- `plan` (optional)
+
+Endpoints:
+- `GET /analytics/kpis?city=&plan=`
+- `GET /analytics/claims-by-trigger?city=&plan=`
+- `GET /analytics/fraud-overview?city=&plan=`
+- `GET /analytics/payouts-ledger?city=&plan=`
+- `GET /analytics/workers-table?city=&plan=`
+- `GET /analytics/weekly-trends?city=&plan=`
+- `GET /analytics/plan-distribution?city=`
+
+---
+
+## PWA behavior
+
+Files:
+- `frontend-worker/public/manifest.json`
+- `frontend-worker/public/sw.js`
+
+Service worker strategy:
+- Cache-first for static assets
+- Network-first for API calls
+- Ignores non-http(s) schemes (prevents `chrome-extension://` cache errors)
+
+---
+
+## Compliance (hackathon-minimum checks implemented)
+
+DPDP Act 2023 (demo-ready):
+- OTP flow **consent gating** before profile form
+- Privacy Notice during auth/onboarding
+- Plain-language claim decision reasons
+- “Raise a Dispute” action on rejected claims
+- “Why this price?” explainability panel
+
+Social Security Code 2020 (demo-ready):
+- Worker classification label during onboarding
+- Coverage clarification warning (income protection only)
+- Explicit exclusions list on policy details
 
 ### Implementation notes (honest scope)
 
