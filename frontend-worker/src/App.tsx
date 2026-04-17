@@ -2999,6 +2999,7 @@ function App() {
                           <thead>
                             <tr style={{ borderBottom: "2px solid var(--border)" }}>
                               <th style={{ textAlign: "left", padding: "8px 10px", color: "var(--text-dim)", fontWeight: 600 }}>Name</th>
+                              <th style={{ textAlign: "left", padding: "8px 10px", color: "var(--text-dim)", fontWeight: 600 }}>Phone</th>
                               <th style={{ textAlign: "left", padding: "8px 10px", color: "var(--text-dim)", fontWeight: 600 }}>City</th>
                               <th style={{ textAlign: "left", padding: "8px 10px", color: "var(--text-dim)", fontWeight: 600 }}>Zone</th>
                               <th style={{ textAlign: "left", padding: "8px 10px", color: "var(--text-dim)", fontWeight: 600 }}>Platform</th>
@@ -3013,6 +3014,7 @@ function App() {
                             {adminWorkersTable.map((w: any) => (
                               <tr key={w.worker_id} style={{ borderBottom: "1px solid var(--border)" }}>
                                 <td style={{ padding: "8px 10px", fontWeight: 600 }}>{w.name}</td>
+                                <td style={{ padding: "8px 10px", fontFamily: "monospace", fontSize: "0.8rem" }}>+91 {w.phone || "—"}</td>
                                 <td style={{ padding: "8px 10px" }}>{w.city}</td>
                                 <td style={{ padding: "8px 10px", fontSize: "0.78rem", color: "var(--text-secondary)" }}>{w.zone}</td>
                                 <td style={{ padding: "8px 10px" }}>{w.platform}</td>

@@ -47,6 +47,15 @@ CITY_ZONES: dict[str, list[tuple[str, float]]] = {
     "Hyderabad": [("Madhapur", 0.29), ("Gachibowli", 0.27)],
 }
 
+# ── Demo phone numbers (10 digits, unique, same order as WORKERS) ───────
+# Use these with OTP 123456 to sign in and load the linked profile.
+DEMO_USER_PHONES: list[str] = [
+    "9876543201", "9876543202", "9876543203", "9876543204", "9876543205",
+    "9876543206", "9876543207", "9876543208", "9876543209", "9876543210",
+    "9876543211", "9876543212", "9876543213", "9876543214", "9876543215",
+    "9876543216", "9876543217", "9876543218", "9876543219", "9876543220",
+]
+
 # ── Worker templates ─────────────────────────────────────────────────────
 WORKERS = [
     # (name, city, zone_name, platform, persona, income, shift, gender, plan)
@@ -173,8 +182,9 @@ def run_seed():
 
         # ── 2. Workers ───────────────────────────────────────────
         worker_rows: list[dict] = []
-        for name, city, zname, platform, persona, income, shift, gender, plan in WORKERS:
-            user = User(name=name, phone=f"9{random.randint(100000000, 999999999)}", city=city,
+        for idx, (name, city, zname, platform, persona, income, shift, gender, plan) in enumerate(WORKERS):
+            phone = DEMO_USER_PHONES[idx]
+            user = User(name=name, phone=phone, city=city,
                         created_at=NOW - timedelta(weeks=14) + timedelta(days=random.randint(0, 7)))
             db.add(user)
             db.flush()
@@ -392,6 +402,10 @@ def run_seed():
         print(f"  Total payouts:    Rs {pays:,.2f}")
         print(f"  Loss ratio:       {lr:.1%}")
         print(f"  BCR:              {round(prem/pays, 3) if pays else 'N/A'}")
+        print("=" * 60)
+        print("  Demo login (OTP 123456) - phone to name:")
+        for i, row in enumerate(WORKERS):
+            print(f"    +91 {DEMO_USER_PHONES[i]}  {row[0]}")
         print("=" * 60)
 
 
