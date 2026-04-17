@@ -11,6 +11,43 @@ type AdminSection = "overview" | "claims" | "fraud" | "predictions" | "payouts" 
 const PLATFORM_OPTIONS = ["Zepto", "Swiggy", "Blinkit", "Instamart", "BigBasket", "Amazon", "Dunzo"];
 const SUPPORTED_CITIES = ["Bengaluru", "Mumbai", "Delhi", "Chennai", "Kolkata", "Hyderabad", "Pune", "Ahmedabad", "Jaipur", "Lucknow"];
 
+const SUPPORTED_CITY_CENTERS: Record<string, { lat: number; lon: number }> = {
+  Bengaluru: { lat: 12.9716, lon: 77.5946 },
+  Mumbai: { lat: 19.0760, lon: 72.8777 },
+  Delhi: { lat: 28.6139, lon: 77.2090 },
+  Chennai: { lat: 13.0827, lon: 80.2707 },
+  Kolkata: { lat: 22.5726, lon: 88.3639 },
+  Hyderabad: { lat: 17.3850, lon: 78.4867 },
+  Pune: { lat: 18.5204, lon: 73.8567 },
+  Ahmedabad: { lat: 23.0225, lon: 72.5714 },
+  Jaipur: { lat: 26.9124, lon: 75.7873 },
+  Lucknow: { lat: 26.8467, lon: 80.9462 },
+};
+
+function haversineKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }) {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(b.lat - a.lat);
+  const dLon = toRad(b.lon - a.lon);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const x =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
+}
+
+function nearestSupportedCity(lat: number, lon: number) {
+  let best: { city: string; km: number } | null = null;
+  for (const city of SUPPORTED_CITIES) {
+    const center = SUPPORTED_CITY_CENTERS[city];
+    if (!center) continue;
+    const km = haversineKm({ lat, lon }, center);
+    if (!best || km < best.km) best = { city, km };
+  }
+  return best;
+}
+
 function ProfilePage({
   t, lang, setLang, profile, phone, setView, setProfile, setWorkerId, workerId, genderLabels, shiftLabels,
 }: {
@@ -261,7 +298,7 @@ function App() {
       navigator.geolocation.getCurrentPosition(resolve, reject, {
         enableHighAccuracy: true,
         timeout: 12000,
-        maximumAge: 60000,
+        maximumAge: 0,
       });
     });
     const lat = position.coords.latitude;
@@ -270,14 +307,16 @@ function App() {
     let city = "";
     let locality = "";
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1`,
-      );
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1&zoom=10`, {
+        headers: { "Accept": "application/json" },
+      });
       const data = await res.json();
       const addr = data?.address || {};
       const detectedCity =
         addr.city ||
+        addr.municipality ||
         addr.town ||
+        addr.city_district ||
         addr.county ||
         addr.state_district ||
         addr.state ||
@@ -297,8 +336,17 @@ function App() {
         return a.includes(b) || b.includes(a);
       });
       // IMPORTANT: never mix user-selected city with detected locality.
-      // If we can map to a supported city, use it; else fall back to detected city or Bengaluru.
-      city = matched || String(detectedCity || "").trim() || "Bengaluru";
+      // If we can map to a supported city, use it; else use nearest supported city by coordinates.
+      if (matched) {
+        city = matched;
+      } else {
+        const nearest = nearestSupportedCity(lat, lon);
+        // Only auto-map if we're reasonably close to a supported city (desktop geolocation can be noisy).
+        city =
+          (nearest && nearest.km <= 150 ? nearest.city : "") ||
+          String(detectedCity || "").trim() ||
+          "Bengaluru";
+      }
       locality = String(detectedLocality || "").trim();
     } catch {
       city = "Bengaluru";
@@ -2280,7 +2328,7 @@ function App() {
                       onClick={() => {
                         // Ensure user sees the detailed Shift Guardian output section.
                         requestAnimationFrame(() => {
-                          document.getElementById("dash-live")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                          document.getElementById("dash-shift-guardian")?.scrollIntoView({ behavior: "smooth", block: "start" });
                         });
                         fetchShiftRecommendation();
                       }}
@@ -2392,7 +2440,7 @@ function App() {
             );
           })()}
 
-          <div className="card shift-guardian-card" style={{ marginTop: "28px" }}>
+          <div id="dash-shift-guardian" className="card shift-guardian-card" style={{ marginTop: "28px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
               <h3 style={{ display: "flex", alignItems: "center", gap: "8px", margin: 0, flexWrap: "wrap" }}>
                 <span>🧭</span> Shift Guardian
