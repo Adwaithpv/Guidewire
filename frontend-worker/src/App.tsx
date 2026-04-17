@@ -2003,7 +2003,18 @@ function App() {
                       AI compares nearby zones in {profile?.city} and picks the safest for your earnings today.
                       {shiftRec?.current_zone?.zone_name && <> Current: <strong>{shiftRec.current_zone.zone_name}</strong></>}
                     </p>
-                    <button type="button" className="venus-side-cta" onClick={fetchShiftRecommendation} disabled={shiftRecLoading}>
+                    <button
+                      type="button"
+                      className="venus-side-cta"
+                      onClick={() => {
+                        // Ensure user sees the detailed Shift Guardian output section.
+                        requestAnimationFrame(() => {
+                          document.getElementById("dash-live")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        });
+                        fetchShiftRecommendation();
+                      }}
+                      disabled={shiftRecLoading}
+                    >
                       {shiftRecLoading ? "Analysing zones..." : "Run shift check"}
                     </button>
                   </div>
