@@ -1,5 +1,10 @@
 # SurakshaShift — Hyperlocal Income Protection for Gig Workers (Phase 3)
 
+## Links
+- **Demo link**: `https://sharkbytedevtrail.vercel.app/`
+- **Pitch deck**: `https://drive.google.com/file/d/1cjdib44Hv0_KCBzzGIPAVxyZbfyNxsK-/view?usp=sharing`
+- **YouTube demo video**: `https://youtu.be/NIU0DEcchbw`
+
 SurakshaShift is a **mobile-first Progressive Web App** that provides **weekly parametric income protection** for gig workers (Swiggy/Zepto/Blinkit/Zomato/Dunzo).
 
 It uses **zone-level disruption signals** (weather, flood, AQI, curfew/closure, platform outage) to:
