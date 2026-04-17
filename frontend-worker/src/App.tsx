@@ -2787,7 +2787,7 @@ function App() {
           </button>
         </aside>
 
-        <main className="main-content" style={{ padding: "40px" }}>
+        <main className="main-content main-content--admin">
           {/* ── Admin filter bar ── */}
           <div className="admin-filter-bar" style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "24px", flexWrap: "wrap" }}>
             <select

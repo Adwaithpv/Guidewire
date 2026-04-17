@@ -2426,7 +2426,7 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   justify-content: center;
   flex-shrink: 0;
 }
-.venus-kpi-body { flex: 1; min-width: 0; }
+.venus-kpi-body { flex: 1; min-width: 0; overflow: hidden; }
 .venus-kpi-label {
   font-size: 0.72rem;
   color: var(--text-muted);
@@ -2443,6 +2443,9 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   color: var(--navy);
   letter-spacing: -0.02em;
   line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .venus-kpi-spark { width: 60px; height: 32px; flex-shrink: 0; opacity: 0.85; }
 
@@ -2951,7 +2954,10 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 /* Old stat-decorator emoji — hide it since we switched to Venus KPI layout */
 .stat-decorator { display: none; }
 
-/* Responsive */
+/* Admin main-content uses tighter padding on desktop (was inline style before) */
+.main-content--admin { padding: 40px; }
+
+/* ══ Responsive ══ */
 @media (max-width: 1200px) {
   .venus-bottom-row { grid-template-columns: 1fr 1fr; }
   .venus-profile-card { grid-column: 1 / -1; }
@@ -2959,9 +2965,70 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 @media (max-width: 960px) {
   .venus-kpi-row { grid-template-columns: repeat(2, 1fr); }
   .venus-split { grid-template-columns: 1fr; }
-  .venus-hero-card { grid-template-columns: 1fr; }
-  .venus-hero-illus { height: 160px; }
+  .venus-hero-card { grid-template-columns: 1fr; padding: 24px; }
+  .venus-hero-illus { height: 180px; }
   .venus-bottom-row { grid-template-columns: 1fr; }
   .venus-search { width: 100%; }
-  .venus-topbar { flex-direction: column; align-items: stretch; }
+  .venus-topbar { flex-direction: column; align-items: stretch; gap: 14px; }
+  .venus-greeting-headline { font-size: 1.65rem; }
+}
+
+/* ── Phones: tighten KPI cards so text never overflows the sparkline ── */
+@media (max-width: 720px) {
+  .venus-kpi {
+    padding: 14px 14px;
+    gap: 10px;
+    min-height: 76px;
+    border-radius: 16px;
+  }
+  .venus-kpi-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+  }
+  .venus-kpi-icon svg { width: 18px; height: 18px; }
+  .venus-kpi-value { font-size: 1.15rem; }
+  .venus-kpi-label { font-size: 0.68rem; }
+  /* Sparklines are decorative; drop them on phone so the value has room */
+  .venus-kpi-spark { display: none; }
+
+  .venus-hero-card { padding: 22px; border-radius: 20px; }
+  .venus-hero-title { font-size: 1.5rem; }
+  .venus-hero-copy { font-size: 0.92rem; }
+  .venus-hero-illus { height: 160px; }
+  .venus-side-card { padding: 22px; border-radius: 20px; }
+
+  .venus-trend-card,
+  .venus-transfers-card,
+  .venus-profile-card { padding: 20px; border-radius: 20px; }
+  .venus-trend-value { font-size: 1.5rem; }
+
+  .venus-greeting-headline { font-size: 1.55rem; }
+  .venus-greeting-hi { font-size: 0.78rem; }
+
+  /* Admin filter bar: keep filters on one row, stacked under the greeting */
+  .admin-filter-bar { gap: 8px !important; }
+  .admin-filter-select { min-width: 0 !important; flex: 1 1 120px; }
+
+  /* Sidebar when it stacks on top — hide the upgrade card & worker-status
+     to shorten vertical footprint; keep nav + logo. Users can still log out. */
+  .venus-sidebar-upgrade { display: none; }
+  .venus-worker-status { display: none; }
+  .sidebar { padding: 16px 14px !important; gap: 6px; }
+  .venus-logo-tile { margin-bottom: 12px; padding: 8px 10px; }
+  .venus-logo-name { font-size: 1rem; }
+  .nav-link { padding: 10px 12px; font-size: 0.88rem; }
+
+  /* Shrink admin padding on phones (overrides the .main-content--admin 40px) */
+  .main-content--admin { padding: 20px; }
+}
+
+/* ── Very small phones: further tighten & go single-column KPIs if needed ── */
+@media (max-width: 420px) {
+  .venus-hero-title { font-size: 1.35rem; }
+  .venus-greeting-headline { font-size: 1.4rem; }
+  .venus-kpi-value { font-size: 1.05rem; }
+  .main-content,
+  .main-content--admin { padding: 16px; }
+  .venus-profile-avatar { width: 72px; height: 72px; font-size: 1.7rem; }
 }
