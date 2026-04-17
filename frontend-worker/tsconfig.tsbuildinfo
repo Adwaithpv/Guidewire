@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/services/api.ts"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/i18n/languagecontext.tsx","./src/i18n/en.ts","./src/i18n/hi.ts","./src/i18n/index.ts","./src/i18n/kn.ts","./src/i18n/mr.ts","./src/i18n/ta.ts","./src/i18n/te.ts","./src/services/api.ts"],"version":"5.9.3"}

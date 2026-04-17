@@ -2499,36 +2499,57 @@ function App() {
     return (
       <div className="app-container">
         <aside className="sidebar">
-          <div className="sidebar-logo">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-              <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z" fill="hsl(22, 95%, 55%)" stroke="hsl(22, 95%, 48%)" strokeWidth="1.2" />
-            </svg>
-            <span>SurakshaShift</span>
-          </div>
-          <div style={{ fontSize: "0.72rem", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, padding: "0 16px", marginBottom: "8px" }}>
-            Insurer Admin
+          <div className="venus-logo-tile">
+            <div className="venus-logo-mark">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z" fill="#fff" />
+              </svg>
+            </div>
+            <div className="venus-logo-text">
+              <span className="venus-logo-name">SurakshaShift</span>
+              <span className="venus-logo-sub">Insurer Admin</span>
+            </div>
           </div>
           <nav className="nav">
             {([
-              { id: "overview" as AdminSection, label: "📊 Overview" },
-              { id: "workers" as AdminSection, label: "👥 Workers" },
-              { id: "claims" as AdminSection, label: "📋 Claims" },
-              { id: "fraud" as AdminSection, label: "🛡️ Fraud Detection" },
-              { id: "predictions" as AdminSection, label: "🔮 Predictions" },
-              { id: "payouts" as AdminSection, label: "💸 Payouts" },
+              { id: "overview" as AdminSection, label: "Dashboard", icon: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+              ) },
+              { id: "workers" as AdminSection, label: "Workers", icon: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              ) },
+              { id: "claims" as AdminSection, label: "Claims", icon: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+              ) },
+              { id: "fraud" as AdminSection, label: "Security", icon: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              ) },
+              { id: "predictions" as AdminSection, label: "Predictions", icon: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 6l-9.5 9.5-5-5L1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+              ) },
+              { id: "payouts" as AdminSection, label: "Payouts", icon: (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+              ) },
             ]).map(item => (
               <button key={item.id} type="button" className={`nav-link ${adminSection === item.id ? "active" : ""}`} onClick={() => setAdminSection(item.id)}>
-                {item.label}
+                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{item.icon}</span>
+                <span>{item.label}</span>
               </button>
             ))}
           </nav>
+          <div className="venus-sidebar-upgrade" style={{ marginBottom: "12px" }}>
+            Upgrade to Enterprise for reinsurer API access
+          </div>
           <button
             type="button"
             className="nav-link"
-            style={{ marginTop: "16px", fontSize: "0.82rem", opacity: 0.7 }}
+            style={{ fontSize: "0.82rem" }}
             onClick={() => setView(workerId ? "dashboard" : "landing")}
           >
-            ← Back to {workerId ? "Dashboard" : "Home"}
+            <span style={{ display: "inline-flex" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </span>
+            <span>Back to {workerId ? "Dashboard" : "Home"}</span>
           </button>
         </aside>
 
@@ -2579,219 +2600,365 @@ function App() {
             <div style={{ textAlign: "center", padding: "80px 0", color: "var(--text-dim)" }}>Loading admin data...</div>
           ) : (
             <>
-              {adminSection === "overview" && kpi && (
-                <section>
-                  <h1 style={{ fontSize: "2rem", marginBottom: "6px" }}>Insurer Dashboard</h1>
-                  <p className="subtitle" style={{ marginBottom: "28px" }}>Real-time KPIs, loss ratios, and platform health</p>
+              {adminSection === "overview" && kpi && (() => {
+                const payoutsSeries: number[] = (adminWeeklyTrends || []).map((w: any) => Number(w.payouts) || 0);
+                const premiumsSeries: number[] = (adminWeeklyTrends || []).map((w: any) => Number(w.premiums) || 0);
+                const claimsSeries: number[] = (adminWeeklyTrends || []).map((w: any) => Number(w.claims) || 0);
+                const latestWeek = adminWeeklyTrends[adminWeeklyTrends.length - 1];
+                const prevWeek = adminWeeklyTrends[adminWeeklyTrends.length - 2];
+                const payoutDelta = latestWeek && prevWeek && prevWeek.payouts > 0
+                  ? (((latestWeek.payouts - prevWeek.payouts) / prevWeek.payouts) * 100)
+                  : 0;
 
-                  {/* ── 6 KPI cards ── */}
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "14px", marginBottom: "28px" }}>
-                    <div className="stat-card">
-                      <span className="stat-decorator" aria-hidden>👥</span>
-                      <span className="stat-label">Active Workers</span>
-                      <span className="stat-value">{kpi.active_workers}</span>
-                      <span className="stat-sub">{kpi.active_policies} active policies</span>
-                    </div>
-                    <div className="stat-card">
-                      <span className="stat-decorator" aria-hidden>₹</span>
-                      <span className="stat-label">Premiums Collected</span>
-                      <span className="stat-value">₹{Number(kpi.premium_collected).toLocaleString("en-IN")}</span>
-                      <span className="stat-sub">All-time</span>
-                    </div>
-                    <div className="stat-card">
-                      <span className="stat-decorator" aria-hidden>💸</span>
-                      <span className="stat-label">Total Payouts</span>
-                      <span className="stat-value" style={{ color: "var(--accent)" }}>₹{Number(kpi.total_payouts).toLocaleString("en-IN")}</span>
-                      <span className="stat-sub">{kpi.approved_claims} claims paid</span>
-                    </div>
-                    <div className="stat-card">
-                      <span className="stat-decorator" aria-hidden>📊</span>
-                      <span className="stat-label">Loss Ratio</span>
-                      <span className="stat-value" style={{ color: lossRatioColor }}>
-                        {(kpi.loss_ratio * 100).toFixed(1)}%
-                      </span>
-                      <span className="stat-sub">{kpi.loss_ratio < 0.7 ? "Healthy" : kpi.loss_ratio < 1 ? "Watch" : "Unsustainable"}</span>
-                    </div>
-                    <div className="stat-card">
-                      <span className="stat-decorator" aria-hidden>❌</span>
-                      <span className="stat-label">Rejected Claims</span>
-                      <span className="stat-value" style={{ color: "var(--error)" }}>{kpi.rejected_claims}</span>
-                      <span className="stat-sub">of {kpi.total_claims} total</span>
-                    </div>
-                    <div className="stat-card">
-                      <span className="stat-decorator" aria-hidden>📐</span>
-                      <span className="stat-label">Avg Claim Value</span>
-                      <span className="stat-value">₹{Number(kpi.avg_claim_value).toLocaleString("en-IN")}</span>
-                      <span className="stat-sub">Per approved claim</span>
-                    </div>
-                  </div>
+                // Sparkline helper (line path)
+                const sparkLine = (data: number[], w = 60, h = 32, stroke = "currentColor") => {
+                  if (data.length < 2) {
+                    return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}><path d={`M0 ${h / 2} L${w} ${h / 2}`} stroke={stroke} strokeWidth={2} fill="none" strokeLinecap="round" /></svg>;
+                  }
+                  const min = Math.min(...data);
+                  const max = Math.max(...data);
+                  const span = max - min || 1;
+                  const step = w / (data.length - 1);
+                  const pts = data.map((v, i) => `${(i * step).toFixed(1)},${(h - ((v - min) / span) * (h - 4) - 2).toFixed(1)}`).join(" ");
+                  return (
+                    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+                      <polyline points={pts} stroke={stroke} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  );
+                };
 
-                  {/* ── Plan distribution + Weekly trends ── */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
-                    <div className="card" style={{ padding: "24px" }}>
-                      <h3 style={{ marginBottom: "16px" }}>Plan Distribution (Active)</h3>
-                      {adminPlanDist.length === 0 ? (
-                        <div style={{ color: "var(--text-dim)", fontSize: "0.9rem" }}>No active plans</div>
-                      ) : (
-                        <div style={{ display: "grid", gap: "10px" }}>
-                          {adminPlanDist.map((pd: any) => {
-                            const maxC = Math.max(...adminPlanDist.map((d: any) => d.count), 1);
-                            return (
-                              <div key={pd.plan}>
-                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "4px" }}>
-                                  <span style={{ color: "var(--text-secondary)" }}>{pd.label || pd.plan}</span>
-                                  <span style={{ fontWeight: 700 }}>{pd.count}</span>
-                                </div>
-                                <div style={{ background: "var(--surface-raised)", borderRadius: "6px", height: "10px", overflow: "hidden" }}>
-                                  <div style={{
-                                    height: "100%", borderRadius: "6px",
-                                    background: pd.plan.startsWith("her-") ? "var(--accent)" : "var(--primary)",
-                                    width: `${(pd.count / maxC) * 100}%`,
-                                    transition: "width 0.4s ease",
-                                  }} />
+                // Bars helper
+                const sparkBars = (data: number[], w = 60, h = 32, fill = "currentColor") => {
+                  if (data.length === 0) return null;
+                  const max = Math.max(...data, 1);
+                  const bw = Math.max(2, (w / data.length) * 0.65);
+                  const gap = (w - bw * data.length) / Math.max(1, data.length - 1);
+                  return (
+                    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+                      {data.map((v, i) => {
+                        const bh = Math.max(2, (v / max) * (h - 2));
+                        return <rect key={i} x={i * (bw + gap)} y={h - bh} width={bw} height={bh} rx={1} fill={fill} />;
+                      })}
+                    </svg>
+                  );
+                };
+
+                // Big trend chart (filled gradient line)
+                const bigTrendChart = (data: number[], w = 320, h = 90) => {
+                  if (data.length < 2) {
+                    return (
+                      <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ display: "block" }}>
+                        <path d={`M0 ${h / 2} L${w} ${h / 2}`} stroke="var(--accent)" strokeWidth={2.5} fill="none" />
+                      </svg>
+                    );
+                  }
+                  const min = Math.min(...data);
+                  const max = Math.max(...data);
+                  const span = max - min || 1;
+                  const step = w / (data.length - 1);
+                  const coords = data.map((v, i) => [i * step, h - ((v - min) / span) * (h - 20) - 10] as const);
+                  const line = coords.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+                  const area = `${line} L${w},${h} L0,${h} Z`;
+                  return (
+                    <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ display: "block" }}>
+                      <defs>
+                        <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.28" />
+                          <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+                        </linearGradient>
+                      </defs>
+                      <path d={area} fill="url(#trendGrad)" />
+                      <path d={line} stroke="var(--accent)" strokeWidth={2.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  );
+                };
+
+                const recentPayouts = (adminPayoutsLedger || []).slice(0, 3);
+                const initial = (name: string | null | undefined) => (name || "W").trim().charAt(0).toUpperCase();
+
+                return (
+                  <section>
+                    {/* ── Greeting + search top bar ── */}
+                    <div className="venus-topbar">
+                      <div className="venus-greeting">
+                        <div className="venus-greeting-hi">Hi Admin,</div>
+                        <h1 className="venus-greeting-headline">Welcome to SurakshaShift!</h1>
+                      </div>
+                      <div className="venus-search">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="search" placeholder="Search workers, claims..." aria-label="Search" />
+                      </div>
+                    </div>
+
+                    {/* ── 4 KPI cards (one highlighted) ── */}
+                    <div className="venus-kpi-row">
+                      <div className="venus-kpi">
+                        <div className="venus-kpi-icon">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+                        </div>
+                        <div className="venus-kpi-body">
+                          <div className="venus-kpi-label">Premiums Collected</div>
+                          <div className="venus-kpi-value">₹{Number(kpi.premium_collected).toLocaleString("en-IN")}</div>
+                        </div>
+                        <div className="venus-kpi-spark" style={{ color: "var(--accent)" }}>{sparkBars(premiumsSeries, 60, 32, "currentColor")}</div>
+                      </div>
+
+                      <div className="venus-kpi">
+                        <div className="venus-kpi-icon">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M2 12h20"/></svg>
+                        </div>
+                        <div className="venus-kpi-body">
+                          <div className="venus-kpi-label">Avg Claim Value</div>
+                          <div className="venus-kpi-value">₹{Number(kpi.avg_claim_value).toLocaleString("en-IN")}</div>
+                        </div>
+                        <div className="venus-kpi-spark" style={{ color: "var(--accent)" }}>{sparkBars(claimsSeries, 60, 32, "currentColor")}</div>
+                      </div>
+
+                      <div className="venus-kpi">
+                        <div className="venus-kpi-icon">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        </div>
+                        <div className="venus-kpi-body">
+                          <div className="venus-kpi-label">Active Workers</div>
+                          <div className="venus-kpi-value">{kpi.active_workers}</div>
+                        </div>
+                        <div className="venus-kpi-spark" style={{ color: "var(--accent)" }}>{sparkLine([kpi.active_workers - 12, kpi.active_workers - 8, kpi.active_workers - 5, kpi.active_workers - 3, kpi.active_workers], 60, 32, "currentColor")}</div>
+                      </div>
+
+                      <div className="venus-kpi is-highlight">
+                        <div className="venus-kpi-icon">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                        </div>
+                        <div className="venus-kpi-body">
+                          <div className="venus-kpi-label">Payouts Activity</div>
+                          <div className="venus-kpi-value">₹{Number(kpi.total_payouts).toLocaleString("en-IN")}</div>
+                        </div>
+                        <div className="venus-kpi-spark" style={{ color: "#fff" }}>{sparkLine(payoutsSeries, 60, 32, "currentColor")}</div>
+                      </div>
+                    </div>
+
+                    {/* ── Hero split: stress-test + fraud ── */}
+                    <div className="venus-split">
+                      <div className="venus-hero-card">
+                        <div>
+                          <h2 className="venus-hero-title">Keep every rider covered, faster.</h2>
+                          <p className="venus-hero-copy">
+                            Loss ratio is <strong style={{ color: lossRatioColor }}>{(kpi.loss_ratio * 100).toFixed(1)}%</strong>{" "}
+                            ({kpi.loss_ratio < 0.7 ? "healthy" : kpi.loss_ratio < 1 ? "watch" : "unsustainable"}).
+                            Run the 14-day monsoon stress test to see next week's projected payouts.
+                          </p>
+                          <button type="button" className="venus-hero-cta" onClick={() => setAdminSection("predictions")}>
+                            Run stress test
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                          </button>
+                        </div>
+                        <div className="venus-hero-illus" aria-hidden>
+                          {/* Stylised shield/card illustration */}
+                          <svg width="100%" height="100%" viewBox="0 0 240 220" preserveAspectRatio="xMidYMid meet">
+                            <defs>
+                              <linearGradient id="heroCard1" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stopColor="#7a70ff" stopOpacity="0.85" />
+                                <stop offset="100%" stopColor="#4a3fe1" stopOpacity="0.92" />
+                              </linearGradient>
+                              <linearGradient id="heroCard2" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stopColor="#a4a2ff" stopOpacity="0.55" />
+                                <stop offset="100%" stopColor="#6b61f0" stopOpacity="0.72" />
+                              </linearGradient>
+                            </defs>
+                            <g transform="translate(28 56) rotate(-12 90 55)">
+                              <rect x="0" y="0" width="180" height="110" rx="14" fill="url(#heroCard2)" opacity="0.65" />
+                            </g>
+                            <g transform="translate(46 40) rotate(8 90 55)">
+                              <rect x="0" y="0" width="180" height="110" rx="14" fill="url(#heroCard1)" />
+                              <text x="18" y="32" fill="rgba(255,255,255,0.75)" fontSize="9" fontFamily="Inter, sans-serif" fontWeight="600" letterSpacing="1">SURAKSHA</text>
+                              <text x="18" y="72" fill="rgba(255,255,255,0.95)" fontSize="14" fontFamily="monospace" letterSpacing="2">7812  2139  0823  XXXX</text>
+                              <text x="18" y="92" fill="rgba(255,255,255,0.68)" fontSize="8" fontFamily="Inter, sans-serif">VALID 05/27</text>
+                              <circle cx="154" cy="86" r="10" fill="rgba(255,255,255,0.22)" />
+                              <circle cx="164" cy="86" r="10" fill="rgba(255,255,255,0.35)" />
+                            </g>
+                          </svg>
+                        </div>
+                      </div>
+
+                      <div className="venus-side-card">
+                        <div className="venus-side-icon">
+                          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 11c0 4-1.5 8-4 10"/>
+                            <path d="M8 8a4 4 0 0 1 8 0c0 4.5-1 7-2.5 9"/>
+                            <path d="M4.5 13c.5-4.5 3.5-8 7.5-8s7 3 7.5 8"/>
+                            <path d="M16 13c0 2-1 4-2 6"/>
+                            <path d="M12 13v2"/>
+                          </svg>
+                        </div>
+                        <h3 className="venus-side-title">Control fraud in-app with a tap</h3>
+                        <p className="venus-side-copy">
+                          <strong style={{ color: "var(--success)" }}>{kpi.auto_approved}</strong> auto-approved ·{" "}
+                          <strong style={{ color: "var(--error)" }}>{kpi.fraud_flagged}</strong> flagged for review this period.
+                        </p>
+                        <button type="button" className="venus-side-cta" onClick={() => setAdminSection("fraud")}>
+                          Review flags
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* ── Bottom row: trend chart + recent transfers + profile ── */}
+                    <div className="venus-bottom-row">
+                      <div className="venus-trend-card">
+                        <div className="venus-trend-header">
+                          <div>
+                            <div className="venus-trend-label">This week's payouts</div>
+                            <div className="venus-trend-value">₹{Number(latestWeek?.payouts ?? 0).toLocaleString("en-IN")}</div>
+                            <div className={`venus-trend-delta ${payoutDelta < 0 ? "is-negative" : ""}`}>
+                              {payoutDelta >= 0 ? "+" : ""}{payoutDelta.toFixed(2)}% vs last week
+                            </div>
+                          </div>
+                          <div className="venus-trend-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+                          </div>
+                        </div>
+                        <div className="venus-trend-chart">
+                          {bigTrendChart(payoutsSeries, 320, 90)}
+                        </div>
+                      </div>
+
+                      <div className="venus-transfers-card">
+                        <h3>Recent Payouts</h3>
+                        {recentPayouts.length === 0 ? (
+                          <div style={{ color: "var(--text-muted)", fontSize: "0.88rem", padding: "8px 0 20px" }}>
+                            No payouts yet. They appear here when claims are approved.
+                          </div>
+                        ) : (
+                          recentPayouts.map((p: any) => (
+                            <div key={p.id} className="venus-transfer-row">
+                              <div className="venus-transfer-avatar">{initial(p.worker_name)}</div>
+                              <div className="venus-transfer-body">
+                                <div className="venus-transfer-name">{p.worker_name || `Worker #${p.worker_id}`}</div>
+                                <div className="venus-transfer-meta">
+                                  {p.completed_at ? formatTime(p.completed_at) : p.initiated_at ? formatTime(p.initiated_at) : "Pending"}
                                 </div>
                               </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="card" style={{ padding: "24px" }}>
-                      <h3 style={{ marginBottom: "16px" }}>Weekly Trend (Last 4 Weeks)</h3>
-                      {adminWeeklyTrends.length === 0 ? (
-                        <div style={{ color: "var(--text-dim)", fontSize: "0.9rem" }}>No trend data</div>
-                      ) : (
-                        <table style={{ width: "100%", fontSize: "0.82rem", borderCollapse: "collapse" }}>
-                          <thead>
-                            <tr style={{ borderBottom: "1px solid var(--border)" }}>
-                              <th style={{ textAlign: "left", padding: "6px 8px", color: "var(--text-dim)" }}>Week</th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "var(--text-dim)" }}>Premiums</th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "var(--text-dim)" }}>Payouts</th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "var(--text-dim)" }}>Claims</th>
-                              <th style={{ textAlign: "right", padding: "6px 8px", color: "var(--text-dim)" }}>LR</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {adminWeeklyTrends.slice(-4).map((w: any) => (
-                              <tr key={w.week_start} style={{ borderBottom: "1px solid var(--border)" }}>
-                                <td style={{ padding: "6px 8px" }}>{w.week}</td>
-                                <td style={{ padding: "6px 8px", textAlign: "right", color: "var(--success)" }}>₹{w.premiums}</td>
-                                <td style={{ padding: "6px 8px", textAlign: "right", color: "var(--accent)" }}>₹{w.payouts}</td>
-                                <td style={{ padding: "6px 8px", textAlign: "right" }}>{w.claims}</td>
-                                <td style={{ padding: "6px 8px", textAlign: "right", fontWeight: 700, color: w.loss_ratio > 0.7 ? "var(--warning)" : "var(--success)" }}>
-                                  {w.loss_ratio > 0 ? `${(w.loss_ratio * 100).toFixed(0)}%` : "—"}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* ── Claims + Fraud cards ── */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-                    <div className="card" style={{ padding: "24px" }}>
-                      <h3 style={{ marginBottom: "16px" }}>Claims Breakdown</h3>
-                      <div className="grid two" style={{ gap: "12px" }}>
-                        <div>
-                          <span className="stat-label">Total Claims</span>
-                          <div style={{ fontSize: "1.5rem", fontWeight: 700 }}>{kpi.total_claims}</div>
-                        </div>
-                        <div>
-                          <span className="stat-label">Approved</span>
-                          <div style={{ fontSize: "1.2rem", fontWeight: 600, color: "var(--success)" }}>{kpi.approved_claims}</div>
-                        </div>
-                        <div>
-                          <span className="stat-label">Pending</span>
-                          <div style={{ fontSize: "1.2rem", fontWeight: 600, color: "var(--warning)" }}>{kpi.pending_claims}</div>
-                        </div>
-                        <div>
-                          <span className="stat-label">Rejected</span>
-                          <div style={{ fontSize: "1.2rem", fontWeight: 600, color: "var(--error)" }}>{kpi.rejected_claims}</div>
-                        </div>
+                              <div className={`venus-transfer-amount ${p.status !== "success" ? "is-out" : ""}`}>
+                                {p.status === "success" ? `+₹${p.amount}` : `₹${p.amount}`}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                        <button type="button" className="venus-transfers-view-all" onClick={() => setAdminSection("payouts")}>
+                          View all
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </button>
                       </div>
-                    </div>
-                    <div className="card" style={{ padding: "24px" }}>
-                      <h3 style={{ marginBottom: "16px" }}>Fraud Detection</h3>
-                      <div className="grid two" style={{ gap: "12px" }}>
-                        <div>
-                          <span className="stat-label">Auto-approved</span>
-                          <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--success)" }}>{kpi.auto_approved}</div>
-                        </div>
-                        <div>
-                          <span className="stat-label">Flagged for Review</span>
-                          <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--error)" }}>{kpi.fraud_flagged}</div>
-                        </div>
-                        <div>
-                          <span className="stat-label">Soft Review</span>
-                          <div style={{ fontSize: "1.2rem", fontWeight: 600, color: "var(--warning)" }}>{kpi.soft_review}</div>
-                        </div>
-                        <div>
-                          <span className="stat-label">Avg Fraud Score</span>
-                          <div style={{ fontSize: "1.2rem", fontWeight: 600 }}>{adminFraud ? (adminFraud.avg_fraud_score * 100).toFixed(1) + "%" : "—"}</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* ── Compliance + Financial proof ── */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginTop: "20px" }}>
-                    <div className="card" style={{ padding: "24px" }}>
-                      <h3 style={{ marginBottom: "14px" }}>Insurance Checklist Coverage</h3>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "12px" }}>
-                        <span className="stat-label">Current score</span>
-                        <span style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--success)" }}>
-                          {adminComplianceChecklist?.summary?.score ?? 0}/{adminComplianceChecklist?.summary?.out_of ?? 10}
-                        </span>
-                      </div>
-                      <div style={{ display: "grid", gap: "8px" }}>
-                        {(adminComplianceChecklist?.checklist || []).slice(0, 5).map((item: any) => (
-                          <div key={item.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem" }}>
-                            <span style={{ color: "var(--text-secondary)" }}>{item.item}</span>
-                            <span style={{ color: item.status ? "var(--success)" : "var(--warning)", fontWeight: 700 }}>
-                              {item.status ? "Covered" : "Partial"}
-                            </span>
+                      <div className="venus-profile-card">
+                        <div className="venus-profile-avatar">A</div>
+                        <div className="venus-profile-name">SurakshaShift Admin</div>
+                        <div className="venus-profile-role">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                          {adminFilterCity || "All India"}
+                        </div>
+                        <div className="venus-profile-stats">
+                          <div>
+                            <div className="venus-profile-stat-label">Workers</div>
+                            <div className="venus-profile-stat-value">{kpi.active_workers}</div>
                           </div>
-                        ))}
+                          <div>
+                            <div className="venus-profile-stat-label">Claims</div>
+                            <div className="venus-profile-stat-value">{kpi.total_claims}</div>
+                          </div>
+                          <div>
+                            <div className="venus-profile-stat-label">Paid</div>
+                            <div className="venus-profile-stat-value">{kpi.approved_claims}</div>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="card" style={{ padding: "24px" }}>
-                      <h3 style={{ marginBottom: "14px" }}>Financial Proof & Stress Test</h3>
-                      <div className="grid two" style={{ gap: "10px" }}>
-                        <div>
-                          <span className="stat-label">12W BCR</span>
-                          <div style={{ fontSize: "1.25rem", fontWeight: 700 }}>
-                            {adminFinancialProof?.portfolio_financials?.benefit_cost_ratio_bcr ?? "—"}
+                    {/* ── Secondary row: plan distribution + compliance + financial proof ── */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr", gap: "22px", marginTop: "22px" }}>
+                      <div className="card" style={{ borderRadius: "22px" }}>
+                        <h3 style={{ marginBottom: "16px" }}>Plan Distribution</h3>
+                        {adminPlanDist.length === 0 ? (
+                          <div style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>No active plans</div>
+                        ) : (
+                          <div style={{ display: "grid", gap: "10px" }}>
+                            {adminPlanDist.map((pd: any) => {
+                              const maxC = Math.max(...adminPlanDist.map((d: any) => d.count), 1);
+                              return (
+                                <div key={pd.plan}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "4px" }}>
+                                    <span style={{ color: "var(--text-secondary)" }}>{pd.label || pd.plan}</span>
+                                    <span style={{ fontWeight: 700, color: "var(--navy)" }}>{pd.count}</span>
+                                  </div>
+                                  <div style={{ background: "var(--surface-raised)", borderRadius: "6px", height: "8px", overflow: "hidden" }}>
+                                    <div style={{
+                                      height: "100%", borderRadius: "6px",
+                                      background: pd.plan.startsWith("her-") ? "var(--accent-gradient)" : "var(--accent)",
+                                      width: `${(pd.count / maxC) * 100}%`,
+                                      transition: "width 0.4s ease",
+                                    }} />
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
+                        )}
+                      </div>
+
+                      <div className="card" style={{ borderRadius: "22px" }}>
+                        <h3 style={{ marginBottom: "14px" }}>Compliance</h3>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "12px" }}>
+                          <span className="stat-label">Checklist score</span>
+                          <span style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--success)", fontFamily: "Outfit, sans-serif" }}>
+                            {adminComplianceChecklist?.summary?.score ?? 0}/{adminComplianceChecklist?.summary?.out_of ?? 10}
+                          </span>
                         </div>
-                        <div>
-                          <span className="stat-label">12W Loss Ratio</span>
-                          <div style={{ fontSize: "1.25rem", fontWeight: 700 }}>
-                            {adminFinancialProof?.portfolio_financials?.loss_ratio_12w != null
-                              ? `${(adminFinancialProof.portfolio_financials.loss_ratio_12w * 100).toFixed(1)}%`
-                              : "—"}
+                        <div style={{ display: "grid", gap: "8px" }}>
+                          {(adminComplianceChecklist?.checklist || []).slice(0, 4).map((item: any) => (
+                            <div key={item.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem" }}>
+                              <span style={{ color: "var(--text-secondary)" }}>{item.item}</span>
+                              <span style={{ color: item.status ? "var(--success)" : "var(--warning)", fontWeight: 700 }}>
+                                {item.status ? "Covered" : "Partial"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="card" style={{ borderRadius: "22px" }}>
+                        <h3 style={{ marginBottom: "14px" }}>Financial Proof</h3>
+                        <div className="grid two" style={{ gap: "10px" }}>
+                          <div>
+                            <span className="stat-label">12W BCR</span>
+                            <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--navy)", fontFamily: "Outfit, sans-serif" }}>
+                              {adminFinancialProof?.portfolio_financials?.benefit_cost_ratio_bcr ?? "—"}
+                            </div>
                           </div>
-                        </div>
-                        <div>
-                          <span className="stat-label">Reserve Buffer</span>
-                          <div style={{ fontSize: "1.1rem", fontWeight: 700 }}>
-                            ₹{adminFinancialProof?.portfolio_financials?.reserve_buffer ?? 0}
+                          <div>
+                            <span className="stat-label">12W LR</span>
+                            <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--navy)", fontFamily: "Outfit, sans-serif" }}>
+                              {adminFinancialProof?.portfolio_financials?.loss_ratio_12w != null
+                                ? `${(adminFinancialProof.portfolio_financials.loss_ratio_12w * 100).toFixed(1)}%`
+                                : "—"}
+                            </div>
                           </div>
-                        </div>
-                        <div>
-                          <span className="stat-label">14-day Stress Status</span>
-                          <div style={{ fontSize: "1.1rem", fontWeight: 700, color: adminFinancialProof?.stress_test_14d_monsoon?.status === "pass" ? "var(--success)" : "var(--warning)" }}>
-                            {(adminFinancialProof?.stress_test_14d_monsoon?.status || "watch").toUpperCase()}
+                          <div>
+                            <span className="stat-label">Reserve</span>
+                            <div style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--navy)" }}>
+                              ₹{adminFinancialProof?.portfolio_financials?.reserve_buffer ?? 0}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="stat-label">Stress 14d</span>
+                            <div style={{ fontSize: "1.05rem", fontWeight: 700, color: adminFinancialProof?.stress_test_14d_monsoon?.status === "pass" ? "var(--success)" : "var(--warning)" }}>
+                              {(adminFinancialProof?.stress_test_14d_monsoon?.status || "watch").toUpperCase()}
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </section>
-              )}
+                  </section>
+                );
+              })()}
 
               {adminSection === "claims" && adminClaimsByTrigger && (
                 <section>
