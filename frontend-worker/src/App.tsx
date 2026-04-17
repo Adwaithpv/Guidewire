@@ -307,7 +307,8 @@ function App() {
     let city = "";
     let locality = "";
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1&zoom=10`, {
+      // zoom=18 helps Nominatim return a more specific locality (suburb/village/road)
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1&zoom=18`, {
         headers: { "Accept": "application/json" },
       });
       const data = await res.json();
@@ -325,8 +326,10 @@ function App() {
         addr.suburb ||
         addr.neighbourhood ||
         addr.quarter ||
+        addr.locality ||
         addr.village ||
         addr.hamlet ||
+        addr.residential ||
         addr.road ||
         "";
 
@@ -355,7 +358,9 @@ function App() {
 
     // Our DB stores zones like "Anna Nagar", "HSR Layout" etc.
     // Do NOT append city to the zone string (it will break Zone lookups).
-    const zone_name = locality || formData.primary_zone || "HSR Layout";
+    // IMPORTANT: never fall back to a hard-coded/default zone when detection fails.
+    // If locality is missing, return empty zone and let the user type/select it.
+    const zone_name = locality;
     return { city, zone_name };
   }, [formData.primary_zone]);
 
@@ -367,9 +372,9 @@ function App() {
       setFormData((prev) => ({
         ...prev,
         city: loc.city,
-        primary_zone: loc.zone_name,
+        primary_zone: loc.zone_name ? loc.zone_name : prev.primary_zone,
       }));
-      setLocationNotice(`Detected: ${loc.zone_name} (${loc.city})`);
+      setLocationNotice(loc.zone_name ? `Detected: ${loc.zone_name} (${loc.city})` : `Detected city: ${loc.city}. Please enter your locality/zone.`);
     } catch (e) {
       setLocationNotice(
         e instanceof Error
