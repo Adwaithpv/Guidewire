@@ -2810,6 +2810,147 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   text-transform: uppercase;
 }
 
+/* ── Worker sidebar status strip (bottom of sidebar) ── */
+.venus-worker-status {
+  margin-top: auto;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.venus-worker-status.active {
+  background: linear-gradient(135deg, rgba(45, 199, 141, 0.12), rgba(91, 91, 234, 0.06));
+  border-color: var(--success-border);
+}
+.venus-worker-status-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.venus-worker-status.active .venus-worker-status-head { color: var(--success); }
+.venus-worker-status-name {
+  font-family: "Outfit", system-ui, sans-serif;
+  font-weight: 800;
+  color: var(--navy);
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+}
+.venus-worker-status-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* ── Shield progress inside hero card ── */
+.venus-shield-progress {
+  margin: 8px 0 22px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+.venus-shield-progress-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.venus-shield-progress-row strong {
+  font-family: "Outfit", system-ui, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--navy);
+  letter-spacing: -0.01em;
+}
+.venus-shield-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(91, 91, 234, 0.12);
+  overflow: hidden;
+}
+.venus-shield-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent-gradient);
+  transition: width 0.4s ease;
+}
+.venus-shield-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+/* ── HER Shield pink tag ── */
+.venus-her-tag {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #d946ef;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.12), rgba(168, 85, 247, 0.10));
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+
+/* ── Live-conditions mini (meters inside bottom-row card) ── */
+.venus-live-meters {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+.venus-live-meter {
+  display: grid;
+  grid-template-columns: 50px 1fr 40px;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.venus-live-meter > span:first-child {
+  font-weight: 600;
+  color: var(--navy);
+}
+.venus-live-meter > span:last-child {
+  text-align: right;
+  font-weight: 700;
+  color: var(--navy);
+  font-family: "Outfit", system-ui, sans-serif;
+}
+.venus-live-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  overflow: hidden;
+}
+.venus-live-bar > div {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+/* Old stat-decorator emoji — hide it since we switched to Venus KPI layout */
+.stat-decorator { display: none; }
+
 /* Responsive */
 @media (max-width: 1200px) {
   .venus-bottom-row { grid-template-columns: 1fr 1fr; }

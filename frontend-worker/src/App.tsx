@@ -47,18 +47,36 @@ function ProfilePage({
   return (
     <div className="app-container">
       <aside className="sidebar">
-        <div className="sidebar-logo">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-            <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z" fill="hsl(22, 95%, 55%)" stroke="hsl(22, 95%, 48%)" strokeWidth="1.2"/>
-          </svg>
-          <span>SurakshaShift</span>
+        <div className="venus-logo-tile">
+          <div className="venus-logo-mark">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+              <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z" fill="#fff" />
+            </svg>
+          </div>
+          <div className="venus-logo-text">
+            <span className="venus-logo-name">SurakshaShift</span>
+            <span className="venus-logo-sub">Weekly Shield</span>
+          </div>
         </div>
         <nav className="nav">
-          <button type="button" className="nav-link" onClick={() => setView("dashboard")}>📊 {t("dash_nav_home")}</button>
-          <button type="button" className="nav-link active">👤 {t("dash_nav_profile")}</button>
+          <button type="button" className="nav-link" onClick={() => setView("dashboard")}>
+            <span style={{ display: "inline-flex" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+            </span>
+            <span>{t("dash_nav_home")}</span>
+          </button>
+          <button type="button" className="nav-link active">
+            <span style={{ display: "inline-flex" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+            <span>{t("dash_nav_profile")}</span>
+          </button>
         </nav>
-        <button type="button" className="nav-link" style={{ marginTop: "8px", fontSize: "0.82rem", opacity: 0.6 }} onClick={() => { setView("landing"); setWorkerId(null); setProfile(null); }}>
-          🚪 {t("dash_nav_signout")}
+        <button type="button" className="nav-link" style={{ marginTop: "8px", fontSize: "0.82rem", opacity: 0.62 }} onClick={() => { setView("landing"); setWorkerId(null); setProfile(null); }}>
+          <span style={{ display: "inline-flex" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </span>
+          <span>{t("dash_nav_signout")}</span>
         </button>
       </aside>
       <main className="main-content" style={{ maxWidth: "700px" }}>
@@ -1579,207 +1597,423 @@ function App() {
     <div className="app-container">
       {/* Sidebar */}
       <aside className="sidebar">
-        <div className="sidebar-logo">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-            <path
-              d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"
-              fill="hsl(22, 95%, 55%)"
-              stroke="hsl(22, 95%, 48%)"
-              strokeWidth="1.2"
-            />
-          </svg>
-          <span>SurakshaShift</span>
+        <div className="venus-logo-tile">
+          <div className="venus-logo-mark">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+              <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z" fill="#fff" />
+            </svg>
+          </div>
+          <div className="venus-logo-text">
+            <span className="venus-logo-name">SurakshaShift</span>
+            <span className="venus-logo-sub">Weekly Shield</span>
+          </div>
         </div>
         <nav className="nav">
-          <button
-            type="button"
-            className={`nav-link ${dashboardSection === "home" ? "active" : ""}`}
-            onClick={() => scrollToDashboardSection("home")}
-          >
-            📊 {t("dash_nav_home")}
-          </button>
-          <button
-            type="button"
-            className={`nav-link ${dashboardSection === "policy" ? "active" : ""}`}
-            onClick={() => scrollToDashboardSection("policy")}
-          >
-            🛡️ {t("dash_nav_policy")}
-          </button>
-          <button
-            type="button"
-            className={`nav-link ${dashboardSection === "claims" ? "active" : ""}`}
-            onClick={() => scrollToDashboardSection("claims")}
-          >
-            📋 {t("dash_nav_claims")}
-          </button>
-          <button
-            type="button"
-            className={`nav-link ${dashboardSection === "live" ? "active" : ""}`}
-            onClick={() => scrollToDashboardSection("live")}
-          >
-            🌦️ {t("dash_nav_live")}
-          </button>
+          {([
+            { id: "home" as DashboardSection, label: t("dash_nav_home"), icon: (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+            ) },
+            { id: "policy" as DashboardSection, label: t("dash_nav_policy"), icon: (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            ) },
+            { id: "claims" as DashboardSection, label: t("dash_nav_claims"), icon: (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+            ) },
+            { id: "live" as DashboardSection, label: t("dash_nav_live"), icon: (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+            ) },
+          ]).map(item => (
+            <button
+              key={item.id}
+              type="button"
+              className={`nav-link ${dashboardSection === item.id ? "active" : ""}`}
+              onClick={() => scrollToDashboardSection(item.id)}
+            >
+              <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
         </nav>
         <button
           type="button"
           className="nav-link"
-          style={{ marginTop: "4px", fontSize: "0.82rem" }}
+          style={{ marginTop: "4px", fontSize: "0.85rem" }}
           onClick={() => setView("profile")}
         >
-          👤 {t("dash_nav_profile")}
+          <span style={{ display: "inline-flex" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </span>
+          <span>{t("dash_nav_profile")}</span>
         </button>
         <button
           type="button"
           className="nav-link"
-          style={{ marginTop: "4px", fontSize: "0.82rem", opacity: 0.7 }}
+          style={{ marginTop: "4px", fontSize: "0.85rem", opacity: 0.72 }}
           onClick={() => { setView("admin"); fetchAdminData(); }}
         >
-          🏢 {t("dash_nav_admin")}
+          <span style={{ display: "inline-flex" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </span>
+          <span>{t("dash_nav_admin")}</span>
         </button>
         <button
           type="button"
           className="nav-link"
-          style={{ marginTop: "4px", fontSize: "0.82rem", opacity: 0.6 }}
+          style={{ marginTop: "4px", fontSize: "0.82rem", opacity: 0.62 }}
           onClick={() => {
             setView("landing");
             setWorkerId(null);
             setProfile(null);
           }}
         >
-          🚪 {t("dash_nav_signout")}
+          <span style={{ display: "inline-flex" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </span>
+          <span>{t("dash_nav_signout")}</span>
         </button>
-        <div className={`worker-status ${activePolicy ? 'active' : ''}`}>
-          <div style={{ fontWeight: 600, marginBottom: "4px" }}>{profile?.name}</div>
-          <div style={{ fontSize: "0.8rem", color: "var(--text-dim)", marginBottom: "6px" }}>{platformSummary} • {profile?.zone_name}</div>
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+        <div className={`venus-worker-status ${activePolicy ? 'active' : ''}`}>
+          <div className="venus-worker-status-head">
             <span className={`status-dot ${activePolicy ? 'active' : ''}`} />
-            {activePolicy ? "Protected • Weekly Shield" : "Unprotected"}
+            <span>{activePolicy ? "Shield Active" : "No Shield"}</span>
           </div>
+          <div className="venus-worker-status-name">{profile?.name}</div>
+          <div className="venus-worker-status-meta">{platformSummary} · {profile?.zone_name}</div>
         </div>
       </aside>
 
       {/* Main */}
       <main className="main-content">
         <section id="dash-home" className="dashboard-section" aria-labelledby="dash-home-title">
-          <header className="dashboard-header">
-            <div>
-              <h1 id="dash-home-title" style={{ fontSize: "2.2rem" }}>
-                {t("dash_greeting")}, {profile?.name?.split(" ")[0]} 👋
-              </h1>
-              <p className="subtitle" style={{ fontSize: "1rem", marginTop: "6px" }}>
-                {liveRisk?.is_disruptive
-                  ? `⚠️ Disruption detected in ${profile?.city}! Your coverage is active.`
-                  : `Your ${profile?.zone_name} zone is currently clear of disruptions.`}
-              </p>
-            </div>
-            <div className="badge success" style={{ padding: "8px 16px", fontSize: "0.85rem" }}>
-              <span className="status-dot active" style={{ marginRight: "6px" }} />
-              {platformSummary} Shift Active
-            </div>
-          </header>
+          {(() => {
+            const payoutsHistory: any[] = workerProtection?.payout_history || [];
+            const recentPayouts = payoutsHistory.slice(0, 3);
+            const payoutsSeries: number[] = payoutsHistory.slice(0, 8).map((p: any) => Number(p.amount) || 0).reverse();
+            const coverageProgressPct = Math.min(100, Math.max(0, Math.round(((workerProtection?.active_coverage?.coverage_progress_pct) || 0) * 100)));
+            const daysRemaining = workerProtection?.active_coverage?.days_remaining ?? 0;
+            const hasShield = Boolean(workerProtection?.active_coverage?.has_active);
+            const isHer = (activePolicy?.plan_name || "").startsWith("her-");
+            const firstName = profile?.name?.split(" ")[0] || "there";
+            const earningsProtected = Number(workerProtection?.earnings_protected || 0);
+            const netBenefit = Number(workerProtection?.net_benefit || 0);
+            const initial = (profile?.name || "W").trim().charAt(0).toUpperCase();
 
-          <div className="grid four" style={{ marginTop: "28px" }}>
-            <div className="stat-card">
-              <span className="stat-decorator" aria-hidden>
-                ₹
-              </span>
-              <span className="stat-label">{t("dash_stats_premium")}</span>
-              <span className="stat-value">₹{activePolicy?.premium_weekly || "0"}</span>
-              <span className="stat-sub">Auto-renews weekly</span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-decorator" aria-hidden>
-                🛡️
-              </span>
-              <span className="stat-label">{t("dash_stats_payout")}</span>
-              <span className="stat-value" style={{ color: "var(--success)" }}>
-                ₹{activePolicy?.max_weekly_payout || "0"}
-              </span>
-              <span className="stat-sub">Up to {activePolicy?.plan_name === "weekly-full" ? "50" : activePolicy?.plan_name === "weekly-basic" ? "20" : "35"}% of avg income</span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-decorator" aria-hidden>
-                💰
-              </span>
-              <span className="stat-label">Earnings Protected</span>
-              <span className="stat-value" style={{ color: "var(--success)" }}>
-                ₹{workerProtection?.earnings_protected?.toFixed(0) || "0"}
-              </span>
-              <span className="stat-sub">
-                {(workerProtection?.net_benefit ?? 0) >= 0
-                  ? `+₹${(workerProtection?.net_benefit ?? 0).toFixed(0)} net benefit`
-                  : `₹${Math.abs(workerProtection?.net_benefit ?? 0).toFixed(0)} paid in premiums`}
-              </span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-decorator" aria-hidden>
-                📋
-              </span>
-              <span className="stat-label">Claims</span>
-              <span className="stat-value" style={{ color: "var(--secondary)" }}>
-                {claimsSummary?.approved_claims || 0}
-              </span>
-              <span className="stat-sub">{claimsSummary?.total_claims || 0} filed · ₹{claimsSummary?.total_payout?.toFixed(0) || "0"} paid out</span>
-            </div>
-          </div>
+            const riskLevel = String(liveRisk?.overall_risk || "low").toLowerCase();
+            const riskColor = riskLevel === "critical" ? "var(--error)" : riskLevel === "elevated" || riskLevel === "high" ? "var(--warning)" : "var(--success)";
+            const riskLabel = liveRisk?.is_disruptive ? "Disruption nearby" : riskLevel === "elevated" || riskLevel === "high" ? "Elevated risk" : "All clear";
 
-          {workerProtection?.active_coverage?.has_active && (
-            <div className="card" style={{ marginTop: "20px", padding: "20px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                <h3 style={{ margin: 0, fontSize: "1rem" }}>Active Weekly Coverage</h3>
-                <span className="badge success" style={{ fontSize: "0.75rem" }}>
-                  {workerProtection.active_coverage.days_remaining} days left
-                </span>
-              </div>
-              <div style={{ background: "var(--surface-raised)", borderRadius: "8px", height: "10px", overflow: "hidden" }}>
-                <div
-                  style={{
-                    height: "100%",
-                    borderRadius: "8px",
-                    background: "linear-gradient(90deg, var(--success), var(--primary))",
-                    width: `${(workerProtection.active_coverage.coverage_progress_pct || 0) * 100}%`,
-                    transition: "width 0.5s ease",
-                  }}
-                />
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: "8px", fontSize: "0.78rem", color: "var(--text-dim)" }}>
-                <span>Premium: ₹{workerProtection.active_coverage.premium_weekly}/wk</span>
-                <span>Max payout: ₹{workerProtection.active_coverage.max_weekly_payout}/wk</span>
-              </div>
-              {(activePolicy?.plan_name || "").startsWith("her-") && (
-                <div style={{ marginTop: "10px", display: "flex", alignItems: "center", gap: "6px", fontSize: "0.76rem" }}>
-                  <span style={{ borderRadius: "999px", padding: "2px 8px", fontSize: "0.6rem", fontWeight: 800, background: "linear-gradient(135deg, rgba(236,72,153,0.15), rgba(168,85,247,0.12))", border: "1px solid rgba(236,72,153,0.3)", color: "#d946ef" }}>HER SHIELD</span>
-                  <span style={{ color: "var(--text-secondary)" }}>Safety + night-shift + subsidy active</span>
+            // Sparkline helpers
+            const sparkLine = (data: number[], w = 60, h = 32, stroke = "currentColor") => {
+              if (!data || data.length < 2) {
+                return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}><path d={`M0 ${h / 2} L${w} ${h / 2}`} stroke={stroke} strokeWidth={2} fill="none" strokeLinecap="round" /></svg>;
+              }
+              const min = Math.min(...data);
+              const max = Math.max(...data);
+              const span = max - min || 1;
+              const step = w / (data.length - 1);
+              const pts = data.map((v, i) => `${(i * step).toFixed(1)},${(h - ((v - min) / span) * (h - 4) - 2).toFixed(1)}`).join(" ");
+              return <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none"><polyline points={pts} stroke={stroke} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+            };
+            const sparkBars = (data: number[], w = 60, h = 32, fill = "currentColor") => {
+              if (!data || data.length === 0) return null;
+              const max = Math.max(...data, 1);
+              const bw = Math.max(2, (w / data.length) * 0.65);
+              const gap = (w - bw * data.length) / Math.max(1, data.length - 1);
+              return (
+                <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+                  {data.map((v, i) => {
+                    const bh = Math.max(2, (v / max) * (h - 2));
+                    return <rect key={i} x={i * (bw + gap)} y={h - bh} width={bw} height={bh} rx={1} fill={fill} />;
+                  })}
+                </svg>
+              );
+            };
+
+            // Synthetic weekly income bars for "Weekly Premium" card (visual hint of income days)
+            const incomeWeekBars = [3200, 4100, 3600, 4500, 3900, 5200, 4800];
+
+            return (
+              <>
+                {/* ── Greeting + search top bar ── */}
+                <div className="venus-topbar">
+                  <div className="venus-greeting">
+                    <div className="venus-greeting-hi">Hi {firstName},</div>
+                    <h1 id="dash-home-title" className="venus-greeting-headline">
+                      {t("dash_greeting")}! <span style={{ display: "inline-block" }}>👋</span>
+                    </h1>
+                  </div>
+                  <div className="venus-search">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="search" placeholder="Search claims, zones..." aria-label="Search" />
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
 
-          {workerProtection?.payout_history?.length > 0 && (
-            <div className="card" style={{ marginTop: "20px", padding: "20px" }}>
-              <h3 style={{ margin: "0 0 14px", fontSize: "1rem" }}>Recent Payouts (UPI)</h3>
-              <div className="data-list" style={{ marginTop: 0, maxHeight: "240px", overflowY: "auto" }}>
-                {workerProtection.payout_history.slice(0, 8).map((p: any) => (
-                  <div className="data-item" key={p.id}>
-                    <div className="item-main">
-                      <span className="item-title" style={{ fontFamily: "monospace", fontSize: "0.82rem" }}>
-                        {p.status === "success" ? "✅" : "❌"} {p.gateway_ref}
-                      </span>
-                      <span className="item-meta">
-                        {p.completed_at ? formatTime(p.completed_at) : "Processing..."}
-                        <span className={`badge ${p.status === "success" ? "success" : "pending"}`} style={{ marginLeft: "8px", zoom: 0.8 }}>
-                          {p.status === "success" ? "PAID" : p.status.toUpperCase()}
-                        </span>
-                      </span>
+                {/* ── 4 KPI cards ── */}
+                <div className="venus-kpi-row">
+                  <div className="venus-kpi">
+                    <div className="venus-kpi-icon">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
                     </div>
-                    <div className="item-amount" style={{ color: p.status === "success" ? "var(--success)" : "var(--text-muted)" }}>
-                      ₹{p.amount}
+                    <div className="venus-kpi-body">
+                      <div className="venus-kpi-label">Weekly Premium</div>
+                      <div className="venus-kpi-value">₹{activePolicy?.premium_weekly || 0}</div>
+                    </div>
+                    <div className="venus-kpi-spark" style={{ color: "var(--accent)" }}>{sparkBars(incomeWeekBars, 60, 32, "currentColor")}</div>
+                  </div>
+
+                  <div className="venus-kpi">
+                    <div className="venus-kpi-icon">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </div>
+                    <div className="venus-kpi-body">
+                      <div className="venus-kpi-label">Max Weekly Payout</div>
+                      <div className="venus-kpi-value">₹{activePolicy?.max_weekly_payout || 0}</div>
+                    </div>
+                    <div className="venus-kpi-spark" style={{ color: "var(--accent)" }}>{sparkLine([20, 35, 30, 40, 45, 42, 50], 60, 32, "currentColor")}</div>
+                  </div>
+
+                  <div className="venus-kpi">
+                    <div className="venus-kpi-icon">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                    </div>
+                    <div className="venus-kpi-body">
+                      <div className="venus-kpi-label">Earnings Protected</div>
+                      <div className="venus-kpi-value">₹{earningsProtected.toFixed(0)}</div>
+                    </div>
+                    <div className="venus-kpi-spark" style={{ color: "var(--accent)" }}>{sparkLine(payoutsSeries.length ? payoutsSeries : [0, 5, 3, 8, 6, 12, earningsProtected || 10], 60, 32, "currentColor")}</div>
+                  </div>
+
+                  <div className="venus-kpi is-highlight">
+                    <div className="venus-kpi-icon">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    </div>
+                    <div className="venus-kpi-body">
+                      <div className="venus-kpi-label">{hasShield ? "Active Shield" : "Shield Status"}</div>
+                      <div className="venus-kpi-value">{hasShield ? `${daysRemaining} days left` : "Inactive"}</div>
+                    </div>
+                    <div className="venus-kpi-spark" style={{ color: "#fff" }}>{sparkLine([10, 20, 30, 40, 50, 65, coverageProgressPct || 70], 60, 32, "currentColor")}</div>
+                  </div>
+                </div>
+
+                {/* ── Hero split: Shield status + Shift Guardian preview ── */}
+                <div className="venus-split">
+                  <div className="venus-hero-card">
+                    <div>
+                      {isHer && (
+                        <span className="venus-her-tag">HER SHIELD</span>
+                      )}
+                      <h2 className="venus-hero-title">
+                        {hasShield ? "Your weekly shield is live." : "Activate your weekly shield."}
+                      </h2>
+                      <p className="venus-hero-copy">
+                        {hasShield ? (
+                          <>
+                            Covered for rain, floods, AQI &amp; platform outages in <strong style={{ color: "var(--navy)" }}>{profile?.zone_name}</strong>.
+                            {liveRisk?.is_disruptive && <> ⚠️ Disruption detected in {profile?.city} — coverage is active.</>}
+                          </>
+                        ) : (
+                          <>Protect your income from rain, floods, AQI, curfews and platform outages — one weekly premium, instant UPI payouts.</>
+                        )}
+                      </p>
+
+                      {hasShield && (
+                        <div className="venus-shield-progress">
+                          <div className="venus-shield-progress-row">
+                            <span>Week progress</span>
+                            <strong>{coverageProgressPct}%</strong>
+                          </div>
+                          <div className="venus-shield-bar">
+                            <div className="venus-shield-bar-fill" style={{ width: `${coverageProgressPct}%` }} />
+                          </div>
+                          <div className="venus-shield-meta">
+                            <span>₹{workerProtection?.active_coverage?.premium_weekly ?? activePolicy?.premium_weekly}/wk premium</span>
+                            <span>Up to ₹{workerProtection?.active_coverage?.max_weekly_payout ?? activePolicy?.max_weekly_payout}/wk payout</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <button type="button" className="venus-hero-cta" onClick={() => scrollToDashboardSection("policy")}>
+                        {hasShield ? "View my policy" : "Activate shield"}
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                      </button>
+                    </div>
+
+                    <div className="venus-hero-illus" aria-hidden>
+                      <svg width="100%" height="100%" viewBox="0 0 240 220" preserveAspectRatio="xMidYMid meet">
+                        <defs>
+                          <linearGradient id="workerShieldA" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stopColor="#7a70ff" stopOpacity="0.95" />
+                            <stop offset="100%" stopColor="#4a3fe1" stopOpacity="1" />
+                          </linearGradient>
+                          <linearGradient id="workerShieldB" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.35" />
+                            <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+                          </linearGradient>
+                          <radialGradient id="workerShieldGlow" cx="50%" cy="40%" r="60%">
+                            <stop offset="0%" stopColor="#a4a2ff" stopOpacity="0.35" />
+                            <stop offset="100%" stopColor="#a4a2ff" stopOpacity="0" />
+                          </radialGradient>
+                        </defs>
+                        <circle cx="120" cy="95" r="96" fill="url(#workerShieldGlow)" />
+                        <g transform="translate(60 30)">
+                          <path
+                            d="M60 0 L0 18 v38 c0 32 22 60 60 72 38-12 60-40 60-72 V18 L60 0 Z"
+                            fill="url(#workerShieldA)"
+                            stroke="#4a3fe1"
+                            strokeWidth="1"
+                          />
+                          <path
+                            d="M60 4 L4 20 v36 c0 30 22 57 56 69 6-2 11-5 16-8"
+                            fill="url(#workerShieldB)"
+                            opacity="0.9"
+                          />
+                          <path
+                            d="M38 66 L54 82 L86 50"
+                            stroke="#fff"
+                            strokeWidth="6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            fill="none"
+                          />
+                        </g>
+                        {/* Floating mini pills */}
+                        <g transform="translate(14 48)">
+                          <rect x="0" y="0" width="62" height="22" rx="11" fill="#fff" stroke="rgba(91,91,234,0.22)" />
+                          <circle cx="12" cy="11" r="4" fill="#5b5bea" />
+                          <text x="22" y="15" fontFamily="Inter, sans-serif" fontSize="9" fontWeight="700" fill="#0e1836">Rain</text>
+                        </g>
+                        <g transform="translate(178 160)">
+                          <rect x="0" y="0" width="58" height="22" rx="11" fill="#fff" stroke="rgba(91,91,234,0.22)" />
+                          <circle cx="12" cy="11" r="4" fill="#2dc78d" />
+                          <text x="22" y="15" fontFamily="Inter, sans-serif" fontSize="9" fontWeight="700" fill="#0e1836">AQI</text>
+                        </g>
+                        <g transform="translate(4 168)">
+                          <rect x="0" y="0" width="66" height="22" rx="11" fill="#fff" stroke="rgba(91,91,234,0.22)" />
+                          <circle cx="12" cy="11" r="4" fill="#f4a740" />
+                          <text x="22" y="15" fontFamily="Inter, sans-serif" fontSize="9" fontWeight="700" fill="#0e1836">Flood</text>
+                        </g>
+                      </svg>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+
+                  <div className="venus-side-card">
+                    <div className="venus-side-icon">
+                      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <circle cx="12" cy="12" r="6"/>
+                        <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                      </svg>
+                    </div>
+                    <h3 className="venus-side-title">Check your next shift</h3>
+                    <p className="venus-side-copy">
+                      AI compares nearby zones in {profile?.city} and picks the safest for your earnings today.
+                      {shiftRec?.current_zone?.zone_name && <> Current: <strong>{shiftRec.current_zone.zone_name}</strong></>}
+                    </p>
+                    <button type="button" className="venus-side-cta" onClick={fetchShiftRecommendation} disabled={shiftRecLoading}>
+                      {shiftRecLoading ? "Analysing zones..." : "Run shift check"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── Bottom row: Live mini / Recent payouts / Profile ── */}
+                <div className="venus-bottom-row">
+                  {/* Live weather mini card */}
+                  <div className="venus-trend-card">
+                    <div className="venus-trend-header">
+                      <div>
+                        <div className="venus-trend-label">Live in {profile?.city}</div>
+                        <div className="venus-trend-value">
+                          {liveRisk?.weather?.temperature_c != null ? `${liveRisk.weather.temperature_c}°C` : "--"}
+                        </div>
+                        <div className="venus-trend-delta" style={{ color: riskColor }}>
+                          {riskLabel}
+                        </div>
+                      </div>
+                      <div className="venus-trend-icon" aria-hidden>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+                      </div>
+                    </div>
+                    <div className="venus-live-meters">
+                      <div className="venus-live-meter">
+                        <span>Rain</span>
+                        <div className="venus-live-bar"><div style={{ width: `${Math.round((liveRisk?.rain_risk || 0) * 100)}%`, background: "var(--accent)" }} /></div>
+                        <span>{Math.round((liveRisk?.rain_risk || 0) * 100)}%</span>
+                      </div>
+                      <div className="venus-live-meter">
+                        <span>Flood</span>
+                        <div className="venus-live-bar"><div style={{ width: `${Math.round((liveRisk?.flood_risk || 0) * 100)}%`, background: "#6b61f0" }} /></div>
+                        <span>{Math.round((liveRisk?.flood_risk || 0) * 100)}%</span>
+                      </div>
+                      <div className="venus-live-meter">
+                        <span>AQI</span>
+                        <div className="venus-live-bar"><div style={{ width: `${Math.round((liveRisk?.aqi_risk || 0) * 100)}%`, background: "var(--warning)" }} /></div>
+                        <span>{Math.round((liveRisk?.aqi_risk || 0) * 100)}%</span>
+                      </div>
+                    </div>
+                    <button type="button" className="venus-transfers-view-all" onClick={() => scrollToDashboardSection("live")}>
+                      Full conditions
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </button>
+                  </div>
+
+                  {/* Recent Payouts */}
+                  <div className="venus-transfers-card">
+                    <h3>Recent Payouts</h3>
+                    {recentPayouts.length === 0 ? (
+                      <div style={{ color: "var(--text-muted)", fontSize: "0.88rem", padding: "8px 0 20px" }}>
+                        No payouts yet. We credit UPI within minutes of any approved claim.
+                      </div>
+                    ) : (
+                      recentPayouts.map((p: any) => (
+                        <div key={p.id} className="venus-transfer-row">
+                          <div className="venus-transfer-avatar" aria-hidden>₹</div>
+                          <div className="venus-transfer-body">
+                            <div className="venus-transfer-name">UPI Payout</div>
+                            <div className="venus-transfer-meta">
+                              {p.completed_at ? formatTime(p.completed_at) : "Processing..."}
+                              {p.gateway_ref && <> · <span style={{ fontFamily: "monospace" }}>{String(p.gateway_ref).slice(-8)}</span></>}
+                            </div>
+                          </div>
+                          <div className={`venus-transfer-amount ${p.status !== "success" ? "is-out" : ""}`}>
+                            {p.status === "success" ? `+₹${p.amount}` : `₹${p.amount}`}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                    <button type="button" className="venus-transfers-view-all" onClick={() => scrollToDashboardSection("claims")}>
+                      View claims
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </button>
+                  </div>
+
+                  {/* Profile card */}
+                  <div className="venus-profile-card">
+                    <div className="venus-profile-avatar">{initial}</div>
+                    <div className="venus-profile-name">{profile?.name || "Worker"}</div>
+                    <div className="venus-profile-role">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      {profile?.zone_name}, {profile?.city}
+                    </div>
+                    <div className="venus-profile-stats">
+                      <div>
+                        <div className="venus-profile-stat-label">Filed</div>
+                        <div className="venus-profile-stat-value">{claimsSummary?.total_claims || 0}</div>
+                      </div>
+                      <div>
+                        <div className="venus-profile-stat-label">Paid</div>
+                        <div className="venus-profile-stat-value">{claimsSummary?.approved_claims || 0}</div>
+                      </div>
+                      <div>
+                        <div className="venus-profile-stat-label">Net {netBenefit >= 0 ? "+" : ""}</div>
+                        <div className="venus-profile-stat-value" style={{ color: netBenefit >= 0 ? "var(--success)" : "var(--text-primary)" }}>
+                          ₹{Math.abs(netBenefit).toFixed(0)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
 
           <div className="card shift-guardian-card" style={{ marginTop: "28px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
