@@ -473,6 +473,8 @@ h6 {
   background: var(--surface-raised);
   border-radius: 10px;
   padding: 10px 12px;
+  max-height: 320px;
+  overflow: auto;
 }
 .privacy-panel strong {
   color: var(--navy);

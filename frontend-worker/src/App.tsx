@@ -1026,14 +1026,88 @@ function App() {
                   </button>
                   {showPrivacyNotice && (
                     <div className="privacy-panel">
-                      <strong>{t("otp_privacy_title")}</strong>
-                      <ul style={{ margin: "8px 0 0 18px", padding: 0 }}>
-                        <li>{t("otp_privacy_body_1")}</li>
-                        <li>{t("otp_privacy_body_2")}</li>
-                        <li>{t("otp_privacy_body_3")}</li>
-                        <li>{t("otp_privacy_body_4")}</li>
-                        <li>{t("otp_privacy_body_5")}</li>
-                      </ul>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "baseline", flexWrap: "wrap" }}>
+                        <strong>{t("otp_privacy_title")}</strong>
+                        <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 600 }}>
+                          Last Updated: 17-4-2026
+                        </span>
+                      </div>
+
+                      <div style={{ marginTop: "10px", display: "grid", gap: "10px" }}>
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: "0.82rem", marginBottom: "4px", color: "var(--navy)" }}>1. Introduction</div>
+                          <div style={{ fontSize: "0.78rem", lineHeight: 1.55, color: "var(--text-secondary)" }}>
+                            SurakshaShift is a weekly parametric income protection platform for gig and platform workers. It protects against income loss from measurable external disruptions
+                            (severe weather, poor air quality, local curfews, zone closures, and similar events). It is <strong>not</strong> a health, life, accident, or vehicle repair policy.
+                            This policy is written to align with the DPDP Act, 2023 and the Code on Social Security, 2020.
+                          </div>
+                        </div>
+
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: "0.82rem", marginBottom: "4px", color: "var(--navy)" }}>2. Scope (Income protection only)</div>
+                          <ul style={{ margin: "6px 0 0 18px", padding: 0, fontSize: "0.78rem", lineHeight: 1.55, color: "var(--text-secondary)" }}>
+                            <li>We cover income loss due to objective disruption triggers.</li>
+                            <li>We do not provide health, life, accident, vehicle repair, or any benefit not clearly stated in the policy.</li>
+                          </ul>
+                        </div>
+
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: "0.82rem", marginBottom: "4px", color: "var(--navy)" }}>3. Information we collect (data minimization)</div>
+                          <ul style={{ margin: "6px 0 0 18px", padding: 0, fontSize: "0.78rem", lineHeight: 1.55, color: "var(--text-secondary)" }}>
+                            <li><strong>Account:</strong> name, mobile number, OTP verification.</li>
+                            <li><strong>Worker & coverage:</strong> platforms, city, delivery zone, shift pattern, income range, plan choice.</li>
+                            <li><strong>Payments:</strong> UPI/payout details for payouts only (we don’t initiate debits).</li>
+                            <li><strong>Claims & risk:</strong> trigger events, claim history, fraud review signals.</li>
+                            <li><strong>Technical:</strong> device/browser/session logs for security and reliability.</li>
+                          </ul>
+                        </div>
+
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: "0.82rem", marginBottom: "4px", color: "var(--navy)" }}>4. How we use your data</div>
+                          <ul style={{ margin: "6px 0 0 18px", padding: 0, fontSize: "0.78rem", lineHeight: 1.55, color: "var(--text-secondary)" }}>
+                            <li>Create/manage your account and verify via OTP</li>
+                            <li>Calculate weekly premiums and eligibility</li>
+                            <li>Monitor objective trigger events and process claims</li>
+                            <li>Detect fraud/duplicate claims and maintain security logs</li>
+                            <li>Send policy/claim/payout notifications</li>
+                          </ul>
+                          <div style={{ marginTop: "6px", fontSize: "0.78rem", color: "var(--text-secondary)" }}>
+                            We do not sell your personal data.
+                          </div>
+                        </div>
+
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: "0.82rem", marginBottom: "4px", color: "var(--navy)" }}>5. Consent</div>
+                          <div style={{ fontSize: "0.78rem", lineHeight: 1.55, color: "var(--text-secondary)" }}>
+                            By consenting, you authorize data use for pricing, policy creation, claim processing, fraud checks, and service communication. You may request withdrawal of consent,
+                            but it can affect active policy/claim processing.
+                          </div>
+                        </div>
+
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: "0.82rem", marginBottom: "4px", color: "var(--navy)" }}>6. Sharing, security, retention</div>
+                          <ul style={{ margin: "6px 0 0 18px", padding: 0, fontSize: "0.78rem", lineHeight: 1.55, color: "var(--text-secondary)" }}>
+                            <li>Shared only as needed with payout providers, data providers, and underwriting/ops partners.</li>
+                            <li>Reasonable safeguards: access controls, restricted admin access, secure APIs, audit logs.</li>
+                            <li>We retain data only as long as needed for policies, claims, fraud review, audit, and compliance.</li>
+                          </ul>
+                        </div>
+
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: "0.82rem", marginBottom: "4px", color: "var(--navy)" }}>7. Claims, disputes, and user responsibilities</div>
+                          <div style={{ fontSize: "0.78rem", lineHeight: 1.55, color: "var(--text-secondary)" }}>
+                            Claims are triggered automatically when an eligible disruption occurs, but may be reviewed/rejected if policy is inactive, trigger conditions aren’t met, zone doesn’t match,
+                            duplicates are detected, or fraud indicators are high. You can raise disputes in-app. Users must not spoof location or submit false/duplicate claims.
+                          </div>
+                        </div>
+
+                        <div style={{ marginTop: "2px", paddingTop: "8px", borderTop: "1px solid var(--border)", fontSize: "0.76rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
+                          <strong style={{ color: "var(--navy)" }}>Contact:</strong> Email: <span style={{ fontFamily: "monospace" }}>[Insert support email]</span>
+                          <div style={{ marginTop: "6px" }}>
+                            <strong style={{ color: "var(--navy)" }}>Short footer:</strong> SurakshaShift is weekly income-protection for gig workers. It is not health, life, accident, or vehicle insurance.
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
