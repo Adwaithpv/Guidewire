@@ -950,7 +950,7 @@ button.nav-link {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
 }
 .shift-guardian-map .leaflet-container {
-  background: #0b1220;
+  background: #eef2f7;
 }
 .shift-guardian-map-legend {
   display: flex;
@@ -980,7 +980,7 @@ button.nav-link {
   border-radius: 50%;
   display: inline-block;
   background: transparent;
-  border: 3px solid #22c55e;
+  border: 3px solid #00d26a;
 }
 @media (max-width: 640px) {
   .shift-guardian-map {

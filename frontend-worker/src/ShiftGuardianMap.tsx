@@ -22,10 +22,10 @@ type Props = {
 };
 
 const RISK_COLORS: Record<string, string> = {
-  low: "#22c55e",
-  moderate: "#f59e0b",
-  high: "#ef4444",
-  critical: "#b91c1c",
+  low: "#00d26a",
+  moderate: "#ffaa00",
+  high: "#ff2d55",
+  critical: "#d70026",
 };
 
 function colorForRisk(level: string): string {
@@ -68,8 +68,10 @@ export default function ShiftGuardianMap({ currentZone, recommendedZone, alterna
         className="shift-guardian-map"
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          subdomains="abcd"
+          maxZoom={19}
         />
         <FitBounds zones={allZones} />
         {allZones.map((z) => {
@@ -84,9 +86,9 @@ export default function ShiftGuardianMap({ currentZone, recommendedZone, alterna
               pathOptions={{
                 color,
                 fillColor: color,
-                fillOpacity: isRecommended ? 0.45 : 0.22,
-                weight: isRecommended ? 4 : 2,
-                dashArray: isRecommended ? undefined : "4 6",
+                fillOpacity: isRecommended ? 0.65 : 0.42,
+                weight: isRecommended ? 5 : 3,
+                opacity: isRecommended ? 1 : 0.95,
               }}
             >
               <Popup>
@@ -130,16 +132,19 @@ export default function ShiftGuardianMap({ currentZone, recommendedZone, alterna
       </MapContainer>
       <div className="shift-guardian-map-legend">
         <span>
-          <span className="legend-dot" style={{ background: RISK_COLORS.low }} /> Low risk
+          <span className="legend-dot" style={{ background: RISK_COLORS.low }} /> Low
         </span>
         <span>
           <span className="legend-dot" style={{ background: RISK_COLORS.moderate }} /> Moderate
         </span>
         <span>
-          <span className="legend-dot" style={{ background: RISK_COLORS.high }} /> High / critical
+          <span className="legend-dot" style={{ background: RISK_COLORS.high }} /> High
         </span>
         <span>
-          <span className="legend-dot legend-dot-recommended" /> Recommended (solid)
+          <span className="legend-dot" style={{ background: RISK_COLORS.critical }} /> Critical
+        </span>
+        <span>
+          <span className="legend-dot legend-dot-recommended" /> Recommended
         </span>
       </div>
     </div>
