@@ -3,6 +3,7 @@ import { api, WorkerPayload } from "./services/api";
 import { CloudRain, Waves, Activity, AlertTriangle, WifiOff, FileText, CheckCircle2, ShieldCheck, Zap } from "lucide-react";
 import { useTranslation, hasChosenLanguage } from "./i18n/LanguageContext";
 import { LANGUAGES, type LangCode } from "./i18n/index";
+import ShiftGuardianMap from "./ShiftGuardianMap";
 
 type View = "language" | "landing" | "otp" | "register" | "quote" | "dashboard" | "admin" | "profile";
 
@@ -2505,6 +2506,14 @@ function App() {
                 >
                   {shiftRec.recommendation_text}
                 </div>
+
+                {shiftRec.current_zone?.lat != null && shiftRec.recommended_zone?.lat != null && (
+                  <ShiftGuardianMap
+                    currentZone={shiftRec.current_zone}
+                    recommendedZone={shiftRec.recommended_zone}
+                    alternatives={shiftRec.alternatives ?? []}
+                  />
+                )}
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                   <div

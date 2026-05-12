@@ -48,6 +48,8 @@ class ZoneRiskSnapshot:
     disruption_probability: float
     estimated_safe_hours: float
     income_protection_score: float
+    lat: float
+    lon: float
 
 
 @dataclass
@@ -134,6 +136,8 @@ async def _build_zone_snapshot(zone_name: str, city: str, shift_type: str) -> Zo
         disruption_probability=_disruption_probability(composite),
         estimated_safe_hours=_estimated_safe_hours(composite, sh),
         income_protection_score=_income_protection_score(composite),
+        lat=round(lat, 5),
+        lon=round(lon, 5),
     )
 
 
@@ -228,6 +232,8 @@ def recommendation_to_api_dict(rec: ShiftRecommendation) -> dict[str, Any]:
             "income_protection_score": z.income_protection_score,
             "estimated_safe_hours": z.estimated_safe_hours,
             "composite_risk": z.composite_risk,
+            "lat": z.lat,
+            "lon": z.lon,
         }
 
     return {

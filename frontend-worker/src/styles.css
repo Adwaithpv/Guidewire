@@ -936,6 +936,62 @@ button.nav-link {
   border-color: var(--border-strong);
 }
 
+.shift-guardian-map-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.shift-guardian-map {
+  height: 320px;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+.shift-guardian-map .leaflet-container {
+  background: #eef2f7;
+}
+.shift-guardian-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.75rem;
+  color: #cbd5e1;
+}
+.shift-guardian-map-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.legend-dot-recommended {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+  background: transparent;
+  border: 3px solid #00d26a;
+}
+@media (max-width: 640px) {
+  .shift-guardian-map {
+    height: 260px;
+  }
+  .shift-guardian-map-legend {
+    font-size: 0.72rem;
+    gap: 10px;
+  }
+}
+
 .simulator-card {
   border-left: 4px solid var(--accent);
   background: var(--surface);
